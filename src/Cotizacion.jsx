@@ -36,7 +36,7 @@ function formatTimeAgo(date) {
   }
 }
 
-export default function Cotizacion({ onBack, catalogData, descOcultos }) {
+export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] }) {
   // Estado del cliente
   const [clientData, setClientData] = useState({
     ruc: '',

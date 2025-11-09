@@ -5,7 +5,7 @@ import { useDebounce } from './hooks/useDebounce.js';
 import catalogData from '../catalogo.json';
 
 // Lazy load Cotizacion component to avoid ESLint warning
-const LazyCotizacion = () => {
+const LazyCotizacion = (props) => {
   const [CotizacionComponent, setCotizacionComponent] = useState(null);
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const LazyCotizacion = () => {
     );
   }
 
-  return <CotizacionComponent />;
+  return <CotizacionComponent {...props} />;
 };
 
 // Export for use in render - ESLint ignore for this specific case
