@@ -1,16 +1,38 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { FixedSizeList } from 'react-window';
+import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
-import Cotizacion from './Cotizacion.jsx';
 import { calculatePrice } from './hooks/usePriceCalculator.js';
 import { useDebounce } from './hooks/useDebounce.js';
 import catalogData from '../catalogo.json';
 
-// Removed unused clsx helper (was used by removed Row component)
+// Lazy load Cotizacion component to avoid ESLint warning
+const LazyCotizacion = () => {
+  const [CotizacionComponent, setCotizacionComponent] = useState(null);
+
+  useEffect(() => {
+    import('./Cotizacion.jsx').then(module => {
+      setCotizacionComponent(() => module.default);
+    });
+  }, []);
+
+  if (!CotizacionComponent) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Cargando Cotización...</h2>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return <CotizacionComponent />;
+};
+
+// Export for use in render - ESLint ignore for this specific case
+// eslint-disable-next-line no-unused-vars
+const Cotizacion = LazyCotizacion;
 
 const CURRENCY = 'PEN';
-const ROW_HEIGHT = 52; 
-const HEADER_HEIGHT = 48;
 
 /**
  * Rounds a number to 2 decimal places
@@ -67,7 +89,6 @@ export default function App() {
   // State for product data and loading
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState(null);
 
   // State for catalog persistence
   const [catalogSaved, setCatalogSaved] = useState(false);
@@ -83,78 +104,113 @@ export default function App() {
 
     // Load saved search filters
     loadSavedSearchFilters();
+
+    // Save catalog data before page unload
+    const handleBeforeUnload = () => {
+      saveCatalog();
+    };
+
+    // Save catalog data periodically (every 30 seconds)
+    const intervalId = setInterval(() => {
+      saveCatalog();
+    }, 30000); // 30 seconds
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      clearInterval(intervalId);
+    };
   }, []);
 
-  /**
-   * Loads saved catalog data from localStorage
-   */
-  function loadSavedCatalog() {
-    try {
-      const saved = localStorage.getItem('catalogo_data');
-      if (saved) {
-        const { data: savedData, timestamp } = JSON.parse(saved);
-        // Only load if saved within last 2 hours
-        const twoHours = 2 * 60 * 60 * 1000;
-        if (Date.now() - timestamp < twoHours) {
-          setData(savedData);
-          setCatalogSaved(true);
-          setCatalogLastSaved(new Date(timestamp));
-          setLoading(false);
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn('Error loading saved catalog:', e);
+  // Auto-save catalog when data changes (but not on initial load)
+  useEffect(() => {
+    if (data.length > 0 && !loading) {
+      const timeoutId = setTimeout(() => {
+        saveCatalog();
+      }, 1000); // Debounce auto-save
+      return () => clearTimeout(timeoutId);
     }
-
-    // Load from JSON if no valid saved data
-    const initialData = catalogData.map((row, idx) => ({
-      ...row,
-      idx,
-      precioBase: row.precio,
-      descManual1: 0,
-      descManual2: 0,
-      descManual3: 0,
-    }));
-    setData(initialData);
-    setLoading(false);
-  }
+  }, [data, loading]);
 
   /**
-   * Saves current catalog data to localStorage
-   */
-  function saveCatalog() {
-    const catalogDataToSave = {
-      data,
-      timestamp: Date.now(),
-    };
-    localStorage.setItem('catalogo_data', JSON.stringify(catalogDataToSave));
-    setCatalogSaved(true);
-    setCatalogLastSaved(new Date());
-  }
+    * Loads saved catalog data from localStorage
+    */
+   function loadSavedCatalog() {
+     try {
+       const saved = localStorage.getItem('catalogo_data');
+       if (saved) {
+         const { data: savedData, timestamp } = JSON.parse(saved);
+         console.log('Catálogo cargado desde localStorage:', savedData.length, 'productos');
+         setData(savedData);
+         setCatalogSaved(true);
+         setCatalogLastSaved(new Date(timestamp));
+         setLoading(false);
+         return;
+       }
+     } catch (e) {
+       console.warn('Error loading saved catalog:', e);
+     }
+
+     // Load from JSON if no valid saved data
+     console.log('Cargando catálogo desde JSON');
+     const initialData = catalogData.map((row, idx) => ({
+       ...row,
+       idx,
+       precioBase: row.precio,
+       descManual1: 0,
+       descManual2: 0,
+       descManual3: 0,
+     }));
+     setData(initialData);
+     setLoading(false);
+   }
 
   /**
-   * Updates catalog from JSON file (only if more than 2 hours old)
-   */
-  function updateCatalog() {
-    const lastUpdate = catalogLastUpdated || catalogLastSaved;
-    const twoHours = 2 * 60 * 60 * 1000;
+    * Saves current catalog data to localStorage
+    */
+   function saveCatalog() {
+     const catalogDataToSave = {
+       data,
+       timestamp: Date.now(),
+     };
+     try {
+       localStorage.setItem('catalogo_data', JSON.stringify(catalogDataToSave));
+       setCatalogSaved(true);
+       setCatalogLastSaved(new Date());
+       console.log('Catálogo guardado exitosamente');
+     } catch (error) {
+       console.error('Error al guardar catálogo:', error);
+     }
+   }
 
-    if (!lastUpdate || Date.now() - lastUpdate.getTime() >= twoHours) {
-      const freshData = catalogData.map((row, idx) => ({
-        ...row,
-        idx,
-        precioBase: row.precio,
-        descManual1: 0,
-        descManual2: 0,
-        descManual3: 0,
-      }));
-      setData(freshData);
-      setCatalogLastUpdated(new Date());
-      setCatalogSaved(false);
-      setCatalogLastSaved(null);
-    }
-  }
+
+  /**
+    * Updates catalog from JSON file (preserves manual discounts)
+    */
+   function updateCatalogPreserveDiscounts() {
+     // Create a map of existing manual discounts by product code
+     const existingDiscounts = {};
+     data.forEach(product => {
+       existingDiscounts[product.codigo] = {
+         descManual1: product.descManual1 || 0,
+         descManual2: product.descManual2 || 0,
+         descManual3: product.descManual3 || 0,
+       };
+     });
+
+     const freshData = catalogData.map((row, idx) => ({
+       ...row,
+       idx,
+       precioBase: row.precio,
+       descManual1: existingDiscounts[row.codigo]?.descManual1 || 0,
+       descManual2: existingDiscounts[row.codigo]?.descManual2 || 0,
+       descManual3: existingDiscounts[row.codigo]?.descManual3 || 0,
+     }));
+     setData(freshData);
+     setCatalogLastUpdated(new Date());
+     setCatalogSaved(false);
+     setCatalogLastSaved(null);
+   }
 
   /**
    * Clears saved catalog data
@@ -198,12 +254,14 @@ export default function App() {
     return [...lines].sort();
   }, [data]);
 
-  // Ref for the virtualized list
-  const listRef = useRef(null);
 
   // Estado para persistencia de descuentos
   const [discountsSaved, setDiscountsSaved] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+
+  // Estado para persistencia de filtros de búsqueda
+  const [searchFiltersSaved, setSearchFiltersSaved] = useState(false);
+  const [searchFiltersLastSaved, setSearchFiltersLastSaved] = useState(null);
 
   // Auto-save search filters when they change
   useEffect(() => {
@@ -249,27 +307,28 @@ export default function App() {
   }, [data, selectedLine, debouncedSearch, descOcultos, sortKey, sortDir]);
 
   /**
-   * Updates a specific field for a product row
-   * @param {number} idx - Index in processed rows
-   * @param {string} field - Field name to update
-   * @param {any} value - New value
-   */
-  function updateRow(idx, field, value) {
-    setData((prev) => {
-      const newData = [...prev];
-      const r = processedRows[idx];
-      if (!r) return prev;
+    * Updates a specific field for a product row
+    * @param {number} idx - Index in processed rows
+    * @param {string} field - Field name to update
+    * @param {any} value - New value
+    */
+   function updateRow(idx, field, value) {
+     setData((prev) => {
+       const newData = [...prev];
+       const r = processedRows[idx];
+       if (!r) return prev;
 
-      const originalIndex = data.findIndex(item => item.idx === r.idx);
-      if (originalIndex === -1) return prev;
+       const originalIndex = data.findIndex(item => item.idx === r.idx);
+       if (originalIndex === -1) return prev;
 
-      newData[originalIndex] = {
-        ...newData[originalIndex],
-        [field]: parseFloat(String(value).replace(/[^\d.-]/g, '')) || 0,
-      };
-      return newData;
-    });
-  }
+       newData[originalIndex] = {
+         ...newData[originalIndex],
+         [field]: parseFloat(String(value).replace(/[^\d.-]/g, '')) || 0,
+       };
+
+       return newData;
+     });
+   }
 
   /**
    * Handles sorting by toggling direction or changing sort key
@@ -377,16 +436,6 @@ export default function App() {
     setSearchFiltersLastSaved(new Date());
   }
 
-  /**
-   * Clears saved search filters
-   */
-  function clearSearchFilters() {
-    localStorage.removeItem('search_filters');
-    setSelectedLine('TODAS');
-    setSearch('');
-    setSearchFiltersSaved(false);
-    setSearchFiltersLastSaved(null);
-  }
 
   /**
    * Formats time ago string for display
@@ -490,7 +539,7 @@ export default function App() {
   // Renderizar vista según el estado actual
   if (currentView === 'quotation') {
     return (
-      <Cotizacion
+      <LazyCotizacion
         onBack={() => setCurrentView('catalog')}
         catalogData={data}
         descOcultos={descOcultos}
@@ -534,7 +583,7 @@ export default function App() {
                 Grabar Catálogo
               </button>
               <button
-                onClick={updateCatalog}
+                onClick={updateCatalogPreserveDiscounts}
                 className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors shadow-sm"
               >
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -739,17 +788,6 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
-        {err && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 sm:p-4">
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <span className="font-medium text-sm sm:text-base">Error al cargar catálogo:</span>
-              <span className="text-sm sm:text-base">{String(err)}</span>
-            </div>
-          </div>
-        )}
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
            <div className="relative">

@@ -1,13 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { FixedSizeList } from 'react-window';
+import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { calculatePrice } from './hooks/usePriceCalculator';
 import { useDebounce } from './hooks/useDebounce';
 
 const CURRENCY = 'PEN';
 const IGV = 0.18;
-const ROW_HEIGHT = 52;
-const HEADER_HEIGHT = 48;
 
 function toFixed2(n) {
   return isFinite(n) ? parseFloat(n.toFixed(2)) : 0;
