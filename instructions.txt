@@ -1,0 +1,10 @@
+I have prepared the project for testing. I have created a test file and configured the `package.json`.
+
+However, I am unable to run the final commands to install the dependencies and run the tests due to my current limitations.
+
+Please run the following commands in your terminal:
+
+1.  `npm install`
+2.  `npm test`
+
+After you run these commands, please paste the output here, and I will analyze it for you.
