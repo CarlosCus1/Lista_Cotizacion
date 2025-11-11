@@ -210,7 +210,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     const wb = XLSX.utils.book_new();
 
     // Datos del cliente
-    const clientData = [
+    const clientDataForExcel = [
       ['RUC', clientData.ruc],
       ['Cliente', clientData.nombre],
       ['OC', clientData.oc],
@@ -250,7 +250,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
 
     // Combinar todo
     const aoa = [
-      ...clientData,
+      ...clientDataForExcel,
       headers,
       ...productData,
       ...totalsData

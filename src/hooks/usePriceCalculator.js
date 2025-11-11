@@ -13,6 +13,20 @@ function toFixed2(n) {
 }
 
 /**
+ * Calculates the compound discount percentage from an array of sequential discounts
+ * @param {number[]} hiddenDiscounts - Array of discount percentages
+ * @returns {number} Compound discount percentage
+ */
+function calculateCompoundHiddenDiscount(hiddenDiscounts) {
+  let factor = 1;
+  const validDiscounts = hiddenDiscounts.filter(v => parseFloat(String(v).replace(/[^\d.-]/g, '')) > 0);
+  for (const discount of validDiscounts) {
+    factor *= (1 - parseFloat(discount) / 100);
+  }
+  return toFixed2((1 - factor) * 100);
+}
+
+/**
  * Calculates the final price of a product after applying a series of sequential discounts.
  * This logic is shared between the main catalog view and the quotation view.
  *
@@ -88,3 +102,5 @@ export function calculatePrice(product, hiddenDiscounts = []) {
     effectiveProductDiscount,
   };
 }
+
+export { calculateCompoundHiddenDiscount };

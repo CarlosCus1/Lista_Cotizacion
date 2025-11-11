@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
-import { calculatePrice } from './hooks/usePriceCalculator.js';
+import { calculatePrice, calculateCompoundHiddenDiscount } from './hooks/usePriceCalculator.js';
 import { useDebounce } from './hooks/useDebounce.js';
 import catalogData from '../catalogo.json';
 
@@ -377,13 +377,10 @@ export default function App() {
       const saved = localStorage.getItem('precios_descuentos');
       if (saved) {
         const { descOcultos: savedOcultos, timestamp } = JSON.parse(saved);
-        // Only load if saved within last 30 days
-        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-        if (Date.now() - timestamp < thirtyDays) {
-          setDescOcultos(savedOcultos);
-          setDiscountsSaved(true);
-          setLastSaved(new Date(timestamp));
-        }
+        // Load discounts without expiration
+        setDescOcultos(savedOcultos);
+        setDiscountsSaved(true);
+        setLastSaved(new Date(timestamp));
       }
     } catch (e) {
       console.warn('Error loading saved discounts:', e);
@@ -475,17 +472,26 @@ export default function App() {
       const rowsForLine = processedRows.filter((r) => r.linea === ln);
       if (rowsForLine.length === 0) continue;
 
+      // Calcular descuento compuesto oculto
+      const compoundHidden = calculateCompoundHiddenDiscount(descOcultos);
+
+      // Crear detalle granular solo con valores no-cero
+      const activeDetails = descOcultos
+        .map(v => parseFloat(String(v).replace(/[^\d.-]/g, '')) || 0)
+        .filter(v => v > 0);
+
+      const detailText = activeDetails.length > 0 ? ` (${activeDetails.join('-')})` : '';
+
       const header = [
-        'código', 'línea', 'nombre', 'precioBase', 'descOculto1', 'descOculto2',
-        'descOculto3', 'descOculto4', 'descManual1', 'descManual2', 'neto', '+IGV', 'final',
+        'código', 'línea', 'nombre', 'precioBase', `descOcultoTotal${detailText}`, 'descManual1', 'descManual2', 'neto', '+IGV', 'final',
       ];
 
       const aoa = [header, ...rowsForLine.map(r => [
         r.codigo ?? '',
         r.linea ?? '',
         r.nombre ?? '',
-        r.precioBase, // This is the original priceBase
-        ...descOcultos.map(v => parseFloat(String(v).replace(/[^\d.-]/g, '')) || 0),
+        r.precioBase,
+        `${compoundHidden}%`,  // Solo porcentaje compuesto
         r.descManual1,
         r.descManual2,
         r.neto,
@@ -500,15 +506,15 @@ export default function App() {
 
       // Set column widths
       ws['!cols'] = [
-        { wch: 14 }, { wch: 16 }, { wch: 48 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
-        { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
+        { wch: 14 }, { wch: 16 }, { wch: 48 }, { wch: 14 }, { wch: 18 },  // descOcultoTotal wider
+        { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
       ];
 
       // Freeze header row
       ws['!freeze'] = { xSplit: 0, ySplit: 1 };
 
       // Style header row (bold)
-      const moneyCols = new Set([3, 10, 11, 12]);
+      const moneyCols = new Set([3, 7, 8, 9]);
       for (let C = 0; C < header.length; C++) {
         const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
         if (cell) cell.s = { font: { bold: true } };
@@ -724,7 +730,14 @@ export default function App() {
               </div>
 
               <div className="flex flex-col">
-                <span className="text-sm font-medium text-gray-700 mb-1">Desc. ocultos</span>
+                <span className="text-sm font-medium text-gray-700 mb-1">
+                  Desc. ocultos
+                  {descOcultos.some(v => v > 0) && (
+                    <span className="ml-2 text-blue-600 font-bold">
+                      (Total: {calculateCompoundHiddenDiscount(descOcultos)}%)
+                    </span>
+                  )}
+                </span>
                 <div className="grid grid-cols-4 gap-1">
                   {[0, 1, 2, 3].map((i) => (
                     <input
