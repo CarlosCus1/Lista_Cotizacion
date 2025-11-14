@@ -1,0 +1,70 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-11-13T01:15:00Z",
+    "description": "Datos de stock - actualizable cada hora desde sistema ERP",
+    "nextUpdate": "2025-11-13T02:15:00Z"
+  },
+  "stock": {
+    "77266": {
+      "total": 20461,
+      "disponible": 20461,
+      "almacenes": {
+        "40": {"total": 0, "disponible": 0},
+        "92": {"total": 0, "disponible": 0},
+        "121": {"total": 0, "disponible": 0},
+        "122": {"total": 0, "disponible": 0},
+        "132": {"total": 0, "disponible": 0},
+        "VES": {"total": 20461, "disponible": 20461}
+      }
+    },
+    "77267": {
+      "total": 0,
+      "disponible": 0,
+      "almacenes": {
+        "40": {"total": 0, "disponible": 0},
+        "92": {"total": 0, "disponible": 0},
+        "121": {"total": 0, "disponible": 0},
+        "122": {"total": 0, "disponible": 0},
+        "132": {"total": 0, "disponible": 0},
+        "VES": {"total": 0, "disponible": 0}
+      }
+    },
+    "09009": {
+      "total": 37981,
+      "disponible": 0,
+      "almacenes": {
+        "40": {"total": 0, "disponible": 0},
+        "92": {"total": 0, "disponible": 0},
+        "121": {"total": 10800, "disponible": 10800},
+        "122": {"total": 27181, "disponible": 0},
+        "132": {"total": 0, "disponible": 0},
+        "VES": {"total": 0, "disponible": 0}
+      }
+    },
+    "016706": {
+      "total": 617,
+      "disponible": 471,
+      "almacenes": {
+        "40": {"total": 0, "disponible": 0},
+        "92": {"total": 0, "disponible": 0},
+        "121": {"total": 0, "disponible": 0},
+        "122": {"total": 0, "disponible": 0},
+        "132": {"total": 0, "disponible": 0},
+        "VES": {"total": 617, "disponible": 471}
+      }
+    },
+    "85693": {
+      "total": 63,
+      "disponible": 63,
+      "almacenes": {
+        "40": {"total": 0, "disponible": 0},
+        "92": {"total": 0, "disponible": 0},
+        "121": {"total": 0, "disponible": 0},
+        "122": {"total": 0, "disponible": 0},
+        "132": {"total": 0, "disponible": 0},
+        "VES": {"total": 63, "disponible": 63}
+      }
+    }
+  }
+}

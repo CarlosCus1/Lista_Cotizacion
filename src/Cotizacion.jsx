@@ -2,39 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { calculatePrice } from './hooks/usePriceCalculator';
 import { useDebounce } from './hooks/useDebounce';
+import { toFixed2, formatMoney, formatTimeAgo } from './utils/formatters.js';
 
-const CURRENCY = 'PEN';
 const IGV = 0.18;
-
-function toFixed2(n) {
-  return isFinite(n) ? parseFloat(n.toFixed(2)) : 0;
-}
-
-function formatMoney(n) {
-  return new Intl.NumberFormat('es-PE', { style: 'currency', currency: CURRENCY }).format(n || 0);
-}
-
-/**
- * Formats time ago string for display
- * @param {Date} date - Date to format
- * @returns {string} Formatted time ago string
- */
-function formatTimeAgo(date) {
-  if (!date) return '';
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 60) {
-    return `hace ${diffMins} min`;
-  } else if (diffHours < 24) {
-    return `hace ${diffHours}h`;
-  } else {
-    return `hace ${diffDays} días`;
-  }
-}
 
 export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] }) {
   // Estado del cliente
@@ -43,6 +13,19 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     nombre: '',
     oc: ''
   });
+
+  // Validaciones de campos
+  const validateRUC = (value) => {
+    const cleanValue = value.replace(/\D/g, ''); // Solo números
+    return cleanValue.length === 11 || cleanValue.length === 8; // RUC (11) o DNI (8)
+  };
+
+  const validateOC = (value) => {
+    return /^\d*$/.test(value); // Solo números
+  };
+
+  const isRUCValid = clientData.ruc === '' || validateRUC(clientData.ruc);
+  const isOCValid = clientData.oc === '' || validateOC(clientData.oc);
 
   // Estado de la cotización
   const [quotedItems, setQuotedItems] = useState([]);
@@ -92,7 +75,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     }
   }, [quotedItems]);
 
-  // Debounce search term to improve performance
+  // Término de búsqueda debounced para mejorar rendimiento
   const debouncedSearch = useDebounce(search, 300);
   
   const filteredCatalog = useMemo(() => {
@@ -130,10 +113,9 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         effectiveProductDiscount,
       } = calculatePrice(productWithManualDiscounts, descOcultos);
 
-      // No aplicar descuentos especiales adicionales en la cotización
+      // Cálculo de totales: cantidad * precio_final_ya_con_descuentos_aplicados
       const finalUnitPrice = neto;
-
-      const totalSinIgv = toFixed2(finalUnitPrice * item.quantity);
+      const totalSinIgv = toFixed2(item.quantity * neto);
       const totalConIgv = toFixed2(totalSinIgv * (1 + IGV));
 
       return {
@@ -197,9 +179,23 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
   };
   
   const updateClientData = (field, value) => {
+    let cleanValue = value;
+
+    // Aplicar validaciones y limpieza según el campo
+    if (field === 'ruc') {
+      cleanValue = value.replace(/\D/g, ''); // Solo números
+      // Limitar a 11 dígitos máximo
+      if (cleanValue.length > 11) {
+        cleanValue = cleanValue.slice(0, 11);
+      }
+    } else if (field === 'oc') {
+      cleanValue = value.replace(/\D/g, ''); // Solo números
+    }
+    // Cliente (nombre) permite texto libre, sin restricciones
+
     setClientData(prev => ({
       ...prev,
-      [field]: value
+      [field]: cleanValue
     }));
   };
 
@@ -209,48 +205,42 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
 
     const wb = XLSX.utils.book_new();
 
-    // Datos del cliente
-    const clientDataForExcel = [
-      ['RUC', clientData.ruc],
-      ['Cliente', clientData.nombre],
-      ['OC', clientData.oc],
-      [], // fila vacía
-    ];
-
-    // Headers de productos
+    // Headers de productos con nomenclatura comercial estandarizada
     const headers = [
-      'Código',
-      'Cantidad',
-      'Precio Base',
-      'Desc01(suma)',
-      'Desc02(suma)',
-      'Desc Total Sumado',
-      'Total s/IGV',
-      'Total c/IGV'
+      'ruc',
+      'oc',
+      'codigo',
+      'nombre',
+      'cantidad',
+      'precio_lista',
+      'desc_cliente_%',
+      'desc_fijos_%',
+      'total_neto',
+      'con_igv'
     ];
 
-    // Datos de productos
+    // Datos de productos con nomenclatura comercial estandarizada
     const productData = quotationProducts.map(p => [
-      p.codigo,
-      p.quantity,
-      p.precioBase,
-      p.descSuma01,
-      p.descSuma02,
-      p.descSuma01 + p.descSuma02,
-      p.totalSinIgv,
-      p.totalConIgv
+      clientData.ruc || '',           // ruc
+      clientData.oc || '',            // oc
+      p.codigo,                       // codigo
+      p.nombre,                       // nombre
+      p.quantity,                     // cantidad
+      p.precio_lista,                   // precio_lista
+      p.descSuma01 ? Math.round(p.descSuma01 * 100) / 100 : 0, // desc_cliente_% (descuentos variables del cliente)
+      p.descSuma02 ? Math.round(p.descSuma02 * 100) / 100 : 0, // desc_fijos_% (descuentos fijos del producto)
+      p.totalSinIgv,                  // total_neto
+      p.totalConIgv                   // con_igv
     ]);
 
-    // Totales
+    // Totales al final con nomenclatura estandarizada
     const totalsData = [
       [], // fila vacía
-      ['TOTAL s/IGV', '', '', '', '', totals.totalSinIgv],
-      ['TOTAL c/IGV', '', '', '', '', totals.totalConIgv],
+      ['TOTALES', '', '', '', '', '', '', '', totals.totalSinIgv, totals.totalConIgv],
     ];
 
-    // Combinar todo
+    // Combinar headers, datos y totales
     const aoa = [
-      ...clientDataForExcel,
       headers,
       ...productData,
       ...totalsData
@@ -260,19 +250,35 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
 
     // Estilos
     ws['!autofilter'] = { ref: XLSX.utils.encode_range(XLSX.utils.decode_range(ws['!ref'])) };
-    ws['!freeze'] = { xSplit: 0, ySplit: 5 }; // Freeze después de datos cliente
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 }; // Freeze header row
 
-    // Column widths
+    // Column widths optimizadas para nomenclatura comercial estandarizada
     ws['!cols'] = [
-      { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
-      { wch: 16 }, { wch: 14 }, { wch: 14 }
+      { wch: 12 }, // ruc
+      { wch: 10 }, // oc
+      { wch: 12 }, // codigo
+      { wch: 40 }, // nombre
+      { wch: 10 }, // cantidad
+      { wch: 16 }, // precio_lista
+      { wch: 16 }, // desc_cliente_%
+      { wch: 14 }, // desc_fijos_%
+      { wch: 14 }, // total_neto
+      { wch: 14 }  // con_igv
     ];
 
     // Estilo headers
-    const headerRange = XLSX.utils.decode_range('A5:G5');
+    const headerRange = XLSX.utils.decode_range('A1:J1');
     for (let C = headerRange.s.c; C <= headerRange.e.c; C++) {
-      const cell = ws[XLSX.utils.encode_cell({ r: 4, c: C })];
+      const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
       if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: 'FFE6E6FA' } } };
+    }
+
+    // Estilo fila de totales
+    const totalRowIndex = headers.length + productData.length;
+    const totalRange = XLSX.utils.decode_range(`A${totalRowIndex + 1}:J${totalRowIndex + 1}`);
+    for (let C = totalRange.s.c; C <= totalRange.e.c; C++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: totalRowIndex, c: C })];
+      if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: 'FFD3D3D3' } } };
     }
 
     const safeSheetName = 'Cotizacion';
@@ -319,31 +325,50 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">RUC</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                RUC/DNI
+                {!isRUCValid && clientData.ruc && (
+                  <span className="text-red-500 text-xs ml-2">• Debe ser 8 (DNI) o 11 (RUC) dígitos</span>
+                )}
+              </label>
               <input
                 type="text"
-                className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="Ingrese RUC"
+                className={`w-full border-2 rounded-lg px-3 py-2 focus:ring-2 transition-colors ${
+                  !isRUCValid && clientData.ruc
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                placeholder="Ingrese RUC (11 dígitos) o DNI (8 dígitos)"
                 value={clientData.ruc}
                 onChange={(e) => updateClientData('ruc', e.target.value)}
+                maxLength="11"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Razón Social</label>
               <input
                 type="text"
                 className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="Nombre del cliente"
+                placeholder="Nombre del cliente o empresa"
                 value={clientData.nombre}
                 onChange={(e) => updateClientData('nombre', e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Orden de Compra</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Orden de Compra
+                {!isOCValid && clientData.oc && (
+                  <span className="text-red-500 text-xs ml-2">• Solo números permitidos</span>
+                )}
+              </label>
               <input
                 type="text"
-                className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="OC-001"
+                className={`w-full border-2 rounded-lg px-3 py-2 focus:ring-2 transition-colors ${
+                  !isOCValid && clientData.oc
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                placeholder="Ingrese número de orden de compra"
                 value={clientData.oc}
                 onChange={(e) => updateClientData('oc', e.target.value)}
               />
@@ -355,7 +380,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         <div className="bg-white rounded-xl shadow-lg border-2 border-blue-100 overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Seleccionar Productos</h2>
+              <h2 className="text-xl font-bold text-gray-800">Seleccionar Productos para Cotización</h2>
               {selectionSaved && selectionLastSaved && (
                 <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -372,7 +397,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                 <input
                   type="text"
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="Buscar producto por código o nombre..."
+                  placeholder="Buscar productos por código, nombre o descripción..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -401,11 +426,11 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                       type="checkbox"
                       onChange={(e) => {
                         if (e.target.checked) {
-                          // Select all visible products
+                          // Seleccionar todos los productos visibles
                           const allProducts = filteredCatalog.map(p => ({ product: p, quantity: 1, manualDiscounts: [0, 0] }));
                           setQuotedItems(allProducts);
                         } else {
-                          // Deselect all
+                          // Deseleccionar todos
                           setQuotedItems([]);
                         }
                       }}
@@ -463,8 +488,8 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-2 text-right font-mono">{isSelected ? formatMoney(selectedItem.unitPrice) : formatMoney(product.precioBase)}</td>
-                      <td className="px-4 py-2 text-right font-mono">{isSelected ? formatMoney(selectedItem.unitPrice * (1 + IGV)) : formatMoney(product.precioBase * (1 + IGV))}</td>
+                      <td className="px-4 py-2 text-right font-mono">{isSelected ? formatMoney(selectedItem.unitPrice) : formatMoney(product.precio_lista)}</td>
+                      <td className="px-4 py-2 text-right font-mono">{isSelected ? formatMoney(selectedItem.unitPrice * (1 + IGV)) : formatMoney(product.precio_lista * (1 + IGV))}</td>
                     </tr>
                   );
                 })}
@@ -485,10 +510,10 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                     <th scope="col" className="px-4 py-3">Nombre</th>
                     <th scope="col" className="px-4 py-3 text-center">Cantidad</th>
                     <th scope="col" className="px-4 py-3 text-right">Precio Base</th>
-                    <th scope="col" className="px-4 py-3 text-center">Desc. Suma 1 (%)</th>
-                    <th scope="col" className="px-4 py-3 text-center">Desc. Suma 2 (%)</th>
-                    <th scope="col" className="px-4 py-3 text-right">Precio Unit. s/IGV</th>
-                    <th scope="col" className="px-4 py-3 text-right">Total s/IGV</th>
+                    <th scope="col" className="px-4 py-3 text-center">Desc. Cliente (%)</th>
+                    <th scope="col" className="px-4 py-3 text-center">Desc. Producto (%)</th>
+                    <th scope="col" className="px-4 py-3 text-right">Precio Unitario</th>
+                    <th scope="col" className="px-4 py-3 text-right">Subtotal</th>
                     <th scope="col" className="px-4 py-3 text-right">Total c/IGV</th>
                     <th scope="col" className="px-4 py-3 text-center">Acción</th>
                   </tr>
@@ -503,8 +528,8 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                         </div>
                       </td>
                       <td className="px-4 py-2 text-center font-mono">{Math.round(p.quantity)}</td>
-                      <td className="px-4 py-2 text-right font-mono">{formatMoney(p.precioBase)}</td>
-                      <td className="px-4 py-2 text-center font-mono text-sm">{p.descSuma01 ? Math.round(p.descSuma01).toFixed(0) + '.00%' : '0.00%'}</td>
+                      <td className="px-4 py-2 text-right font-mono">{formatMoney(p.precio_lista)}</td>
+                      <td className="px-4 py-2 text-center font-mono text-sm">{p.descSuma01 ? (Math.round(p.descSuma01 * 100) / 100).toFixed(2) + '%' : '0.00%'}</td>
                       <td className="px-4 py-2 text-center font-mono text-sm">{p.descSuma02 ? (Math.round(p.descSuma02 * 100) / 100).toFixed(2) + '%' : '0.00%'}</td>
                       <td className="px-4 py-2 text-right font-mono">{formatMoney(p.unitPrice)}</td>
                       <td className="px-4 py-2 text-right font-mono font-bold text-green-700">{formatMoney(p.totalSinIgv)}</td>
@@ -527,11 +552,11 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
           <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-100">
             <div className="space-y-2 mb-4">
               <div className="flex justify-between items-center text-lg font-bold border-b border-gray-300 pb-2">
-                <span className="text-gray-800">Total s/IGV:</span>
+                <span className="text-gray-800">Subtotal (sin IGV):</span>
                 <span className="text-green-600">{formatMoney(totals.totalSinIgv)}</span>
               </div>
               <div className="flex justify-between items-center text-xl font-bold">
-                <span className="text-gray-800">Total c/IGV:</span>
+                <span className="text-gray-800">Total (con IGV):</span>
                 <span className="text-blue-600">{formatMoney(totals.totalConIgv)}</span>
               </div>
             </div>
@@ -558,7 +583,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
-                Exportar XLSX
+                Generar Cotización
               </button>
             </div>
           </div>

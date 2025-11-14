@@ -1,20 +1,28 @@
 {
-  "name": "precios_interactivos",
-  "version": "1.0.0",
-  "description": "",
+  "name": "lista-cotizacion",
+  "version": "1.1.0",
+  "description": "Aplicación web para catálogo de precios interactivo con cotizaciones",
+  "homepage": "https://tu-usuario.github.io/Lista_Cotizacion",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
+    "start": "node server.js",
+    "dev:backend": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
     "@vitejs/plugin-react": "^4.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "node-fetch": "^3.3.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-window": "^1.8.10",
@@ -28,9 +36,9 @@
     "eslint": "^8.57.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "gh-pages": "^6.1.1",
     "jsdom": "^22.0.0",
     "postcss": "^8.4.23",
-    "tailwindcss": "^3.3.2",
-    "vitest": "^0.31.0"
+    "tailwindcss": "^3.3.2"
   }
 }

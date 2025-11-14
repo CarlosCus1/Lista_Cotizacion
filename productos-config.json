@@ -1,0 +1,89 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-11-13",
+    "description": "Configuración de productos con descuentos fijos - actualizado según necesidades comerciales"
+  },
+  "categories": {
+    "vinifan": {
+      "name": "Vinifan",
+      "description": "Artículos de dibujo, escritura y manualidades",
+      "subcategories": ["dibujo", "escritura", "archivo", "manualidades", "sensoriales", "accesorios", "metalica", "pintura", "pegamentos"],
+      "defaultDiscounts": [5, 10, 0, 0]
+    },
+    "viniball": {
+      "name": "Viniball",
+      "description": "Pelotas y artículos de deporte",
+      "subcategories": ["pelotas", "mascotas"],
+      "defaultDiscounts": [15, 5, 0, 0]
+    },
+    "representadas": {
+      "name": "Representadas",
+      "description": "Productos de marcas representadas",
+      "subcategories": ["representadas"],
+      "defaultDiscounts": [20, 8, 3, 0]
+    }
+  },
+  "products": [
+    {
+      "codigo": "77266",
+      "nombre": "COLORES TRIANGULARES VINIFAN LARGOS X24 -MINA 4MM",
+      "categoria": "vinifan",
+      "subcategoria": "pintura",
+      "precioLista": 11.86,
+      "desc1": 5,
+      "desc2": 10,
+      "desc3": 0,
+      "desc4": 0,
+      "unidad": "UND"
+    },
+    {
+      "codigo": "77267",
+      "nombre": "COLORES TRIANGULARES VINIFAN LARGOS X36 -MINA 4MM",
+      "categoria": "vinifan",
+      "subcategoria": "pintura",
+      "precioLista": 19.91,
+      "desc1": 5,
+      "desc2": 10,
+      "desc3": 0,
+      "desc4": 0,
+      "unidad": "UND"
+    },
+    {
+      "codigo": "09009",
+      "nombre": "PLASTILINA VINIFAN JUMBO CLASICA X 12",
+      "categoria": "vinifan",
+      "subcategoria": "manualidades",
+      "precioLista": 3.43,
+      "desc1": 8,
+      "desc2": 5,
+      "desc3": 0,
+      "desc4": 0,
+      "unidad": "UND"
+    },
+    {
+      "codigo": "016706",
+      "nombre": "FUTBOL CUERO TERMOSELLADA BLANQUIRROJA #5",
+      "categoria": "viniball",
+      "subcategoria": "pelotas",
+      "precioLista": 33.32,
+      "desc1": 15,
+      "desc2": 5,
+      "desc3": 0,
+      "desc4": 0,
+      "unidad": "UND"
+    },
+    {
+      "codigo": "85693",
+      "nombre": "ENGRAPADOR ALICATE K1 VERDE PASTEL",
+      "categoria": "representadas",
+      "subcategoria": "representadas",
+      "precioLista": 97.74,
+      "desc1": 20,
+      "desc2": 8,
+      "desc3": 3,
+      "desc4": 0,
+      "unidad": "UND"
+    }
+  ]
+}
