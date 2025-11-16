@@ -3,11 +3,13 @@ import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { calculatePrice, calculateCompoundHiddenDiscount } from './hooks/usePriceCalculator.js';
 import { useDebounce } from './hooks/useDebounce.js';
-import catalogData from '../catalogo.json';
+import catalogData from '../data-processor/outputs/catalogo-base.json';
+import discountData from '../data-processor/outputs/descuentos-fijos.json';
+import stockData from '../data-processor/outputs/stock.json';
+import noDiscountData from '../data-processor/outputs/sin-descuentos.json';
 import DataTable from './components/DataTable.jsx';
 import { formatMoney, formatTimeAgo } from './utils/formatters.js';
 import CategoryFilter from './components/CategoryFilter.jsx';
-import { loadNoDiscountProducts, isNoDiscountProduct } from './utils/noDiscountManager.js';
 
 
 // Carga diferida del componente Cotizacion para evitar advertencia de ESLint
@@ -82,9 +84,6 @@ export default function App() {
 
   // Los descuentos se guardan automáticamente en localStorage
 
-  // Estado para persistencia de filtros de búsqueda
-  const [searchFiltersSaved, setSearchFiltersSaved] = useState(false);
-  const [searchFiltersLastSaved, setSearchFiltersLastSaved] = useState(null);
 
   // Guardar automáticamente los filtros de búsqueda cuando cambian
   useEffect(() => {
@@ -190,37 +189,6 @@ export default function App() {
     }
   }
 
-  /**
-   * Carga descuentos con sistema de recuperación automático
-   */
-  async function loadSavedDiscountsWithRecovery() {
-    try {
-      // Intentar carga normal primero y esperar resultado
-      await loadSavedDiscounts();
-      
-      // Esperar un momento para que React procese el estado
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Verificar si realmente se cargaron datos válidos
-      const currentDescuentos = JSON.parse(localStorage.getItem('precios_descuentos_backup') || '{}');
-      const hasValidData = currentDescuentos &&
-                          Array.isArray(currentDescuentos.descOcultos) &&
-                          currentDescuentos.descOcultos.length === 4 &&
-                          currentDescuentos.descOcultos.some(d => d > 0);
-      
-      console.log('Estado de carga de descuentos:', {
-        descOcultosActuales: descOcultos,
-        tieneDatosValidos: hasValidData,
-        datosEnStorage: currentDescuentos
-      });
-      
-      return hasValidData || descOcultos.some(d => d > 0);
-      
-    } catch (error) {
-      console.error('Error en carga de descuentos con recuperación:', error);
-      return false;
-    }
-  }
 
 
   // Auto-guardar configuración de columnas manuales
@@ -242,12 +210,6 @@ export default function App() {
   }, [descOcultos]);
 
 
-  // Cargar la lista negra de productos sin descuentos
-  useEffect(() => {
-    if (data.length > 0) {
-      loadAndApplyNoDiscountList();
-    }
-  }, [data.length]);
 
 
   /**
@@ -258,7 +220,7 @@ export default function App() {
       const savedData = await loadFromDB('catalog', 'data');
       if (savedData && Array.isArray(savedData) && savedData.length > 0) {
         console.log('Catálogo cargado desde IndexedDB:', savedData.length, 'productos');
-        await applyNoDiscountList(savedData);
+        setData(savedData);
 
         // Cargar configuraciones
         const savedDesc = await loadFromDB('settings', 'clientDiscounts');
@@ -276,61 +238,33 @@ export default function App() {
 
     // Cargar desde JSON si no hay datos guardados válidos
     console.log('Cargando catálogo desde JSON');
-    const initialData = catalogData.map((row, idx) => ({
-      ...row,
-      idx,
-      precio_lista: row.precio || row.precioLista,
-      descManual1: 0,
-      descManual2: 0,
-      descManual3: 0,
-      sinDescuentos: false,
-    }));
-    await applyNoDiscountList(initialData);
+    const initialData = catalogData.map((row, idx) => {
+      const code = row.codigo;
+      const discounts = discountData[code] || [0, 0, 0, 0];
+      const stock = stockData[code] || 0;
+      const sinDescuentos = noDiscountData.includes(code);
+
+      return {
+        ...row,
+        idx,
+        precio_lista: row.precioLista,
+        stock,
+        desc1: discounts[0],
+        desc2: discounts[1],
+        desc3: discounts[2],
+        desc4: discounts[3],
+        descManual1: 0,
+        descManual2: 0,
+        descManual3: 0,
+        sinDescuentos,
+      };
+    });
+    setData(initialData);
     // Guardar en IndexedDB para futuras cargas
     saveToDB('catalog', 'data', initialData);
     setLoading(false);
   }
 
-  /**
-   * Carga la lista negra de productos sin descuentos y la aplica a los datos
-   */
-  async function loadAndApplyNoDiscountList() {
-    try {
-      const noDiscountSet = await loadNoDiscountProducts();
-      setNoDiscountList(noDiscountSet);
-      
-      // Aplicar la lista negra a los datos actuales
-      setData(prevData => prevData.map(item => ({
-        ...item,
-        sinDescuentos: noDiscountSet.has(item.codigo) || item.sinDescuentos
-      })));
-      
-      console.log(`Lista negra aplicada: ${noDiscountSet.size} productos marcados sin descuentos automáticos`);
-    } catch (error) {
-      console.error('Error cargando lista negra:', error);
-    }
-  }
-
-  /**
-   * Aplica la lista negra a un array de datos de productos
-   */
-  async function applyNoDiscountList(dataArray) {
-    try {
-      const noDiscountSet = await loadNoDiscountProducts();
-      setNoDiscountList(noDiscountSet);
-      
-      const updatedData = dataArray.map(item => ({
-        ...item,
-        sinDescuentos: noDiscountSet.has(item.codigo) || item.sinDescuentos
-      }));
-      
-      setData(updatedData);
-      console.log(`Lista negra aplicada: ${noDiscountSet.size} productos marcados sin descuentos automáticos`);
-    } catch (error) {
-      console.error('Error aplicando lista negra:', error);
-      setData(dataArray);
-    }
-  }
 
 
 
@@ -449,181 +383,7 @@ export default function App() {
      }
    }
 
-  /**
-   * Guarda automáticamente la cadena de descuentos en IndexedDB
-   */
-   async function saveDiscounts() {
-     try {
-       await saveToDB('descuentos_cliente_string', discountString);
-       console.log('Cadena de descuentos cliente guardada en IndexedDB:', discountString);
-     } catch (error) {
-       console.error('Error guardando cadena de descuentos cliente:', error);
-     }
-   }
 
-  /**
-   * Genera un checksum simple para verificar integridad de datos
-   */
-  function generateSimpleChecksum(discounts) {
-    return discounts.reduce((sum, discount) => sum + (discount || 0), 0).toFixed(2);
-  }
-
-  /**
-   * Función de recuperación de emergencia para casos extremos
-   */
-  function emergencyRestoreDiscounts() {
-    try {
-      // Intentar múltiples fuentes de respaldo
-      const sources = ['precios_descuentos_emergency', 'precios_descuentos_backup'];
-      
-      for (const source of sources) {
-        const saved = localStorage.getItem(source);
-        if (saved) {
-          const data = JSON.parse(saved);
-          if (data && Array.isArray(data.descOcultos) && data.descOcultos.length === 4) {
-            console.log('Descuentos restaurados desde fuente de emergencia:', source);
-            setDescOcultos(data.descOcultos);
-            return true;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error en recuperación de emergencia:', error);
-    }
-    
-    console.warn('No se pudieron recuperar descuentos desde fuentes de emergencia');
-    return false;
-  }
-
-  /**
-   * Sincroniza cadena de descuentos desde IndexedDB para detectar cambios externos
-   */
-   async function syncDiscountsFromStorage() {
-     try {
-       const saved = await loadFromDB('descuentos_cliente_string');
-       if (saved && saved !== discountString) {
-         console.log('Cambios detectados en cadena de descuentos, sincronizando...');
-         setDiscountString(saved);
-       }
-     } catch (error) {
-       console.warn('Error sincronizando cadena de descuentos desde IndexedDB:', error);
-     }
-   }
-
-  /**
-   * Guarda el contador de columnas manuales en localStorage
-   */
-  function saveManualColumnsCount() {
-    try {
-      const data = {
-        descManualCount,
-        timestamp: Date.now(),
-        version: '1.0.0'
-      };
-      
-      localStorage.setItem('desc_manual_count', JSON.stringify(data));
-      console.log('Contador de columnas manuales guardado:', descManualCount);
-      
-    } catch (error) {
-      console.error('Error guardando contador de columnas manuales:', error);
-    }
-  }
-
-  /**
-   * Carga el contador de columnas manuales desde localStorage
-   */
-  async function loadManualColumnsCount() {
-    try {
-      const saved = await loadFromDB('settings', 'manualColumns');
-      if (typeof saved === 'number' && saved >= 1 && saved <= 3) {
-        console.log('Contador de columnas manuales cargado desde IndexedDB:', saved);
-        setDescManualCount(saved);
-        return true;
-      }
-    } catch (error) {
-      console.warn('Error cargando contador de columnas manuales desde IndexedDB:', error);
-    }
-
-    return false;
-  }
-
-  /**
-   * Carga la cadena de descuentos guardada desde IndexedDB
-   */
-   async function loadSavedDiscounts() {
-     try {
-       let saved = await loadFromDB('descuentos_cliente_string');
-       if (!saved) {
-         // Intentar migrar desde localStorage
-         let localSaved = localStorage.getItem('descuentos_cliente_string');
-         if (localSaved) {
-           saved = localSaved;
-         } else {
-           const oldSaved = localStorage.getItem('precios_descuentos');
-           if (oldSaved) {
-             const data = JSON.parse(oldSaved);
-             if (data && Array.isArray(data.descOcultos) && data.descOcultos.length === 4) {
-               saved = data.descOcultos.map(d => d.toString()).join(' ');
-             }
-           }
-         }
-         if (saved) {
-           // Migrar a IndexedDB
-           await saveToDB('descuentos_cliente_string', saved);
-           localStorage.removeItem('descuentos_cliente_string');
-           localStorage.removeItem('precios_descuentos');
-           localStorage.removeItem('precios_descuentos_backup');
-           localStorage.removeItem('precios_descuentos_emergency');
-           console.log('Descuentos migrados a IndexedDB:', saved);
-         }
-       }
-       if (saved) {
-         setDiscountString(saved);
-         updateDiscountsFromString(saved);
-         console.log('Cadena de descuentos cliente cargada desde IndexedDB:', saved);
-       }
-     } catch (error) {
-       console.error('Error cargando cadena de descuentos cliente:', error);
-     }
-   }
-
-  /**
-   * Carga los filtros de búsqueda guardados desde localStorage
-   */
-  async function loadSavedSearchFilters() {
-    try {
-      const saved = await loadFromDB('settings', 'searchFilters');
-      if (saved) {
-        const { selectedLine: savedLine, search: savedSearch, categoriasActivas: savedCategorias, timestamp } = saved;
-        // Solo cargar si se guardó en las últimas 24 horas
-        const oneDay = 24 * 60 * 60 * 1000;
-        if (Date.now() - timestamp < oneDay) {
-          setSelectedLine(savedLine || 'TODAS');
-          setSearch(savedSearch || '');
-          setCategoriasActivas(savedCategorias || { vinifan: true, viniball: false, representadas: false });
-          setSearchFiltersSaved(true);
-          setSearchFiltersLastSaved(new Date(timestamp));
-        }
-      }
-    } catch (e) {
-      console.warn('Error loading saved search filters from IndexedDB:', e);
-    }
-  }
-
-  /**
-   * Guarda los filtros de búsqueda actuales en localStorage
-   */
-  function saveSearchFilters() {
-    const filtersData = {
-      selectedLine,
-      search,
-      categoriasActivas,
-      timestamp: Date.now(),
-    };
-    localStorage.setItem('search_filters', JSON.stringify(filtersData));
-    setSearchFiltersSaved(true);
-    setSearchFiltersLastSaved(new Date());
-  }
 
 
   /**
@@ -652,18 +412,25 @@ export default function App() {
       // Calcular descuento compuesto oculto
       const compoundHidden = calculateCompoundHiddenDiscount(descOcultos);
 
-      // Encabezado dinámico según columnas activadas (nomenclatura comercial estandarizada)
+      // Encabezado base
       const baseHeader = [
         'codigo',
         'linea',
         'nombre',
-        'precio_lista',
-        'desc_cliente_%',
-        'desc_fijos_1_%',
-        'desc_fijos_2_%',
-        'desc_fijos_3_%',
-        'desc_fijos_4_%'
+        'precio_lista'
       ];
+
+      // Filtrar descuento cliente solo si tiene valor > 0
+      const clientDiscounts = compoundHidden > 0 ? ['desc_cliente_%'] : [];
+
+      // Filtrar descuentos fijos solo si tienen valores > 0 en TODA la base de datos
+      // Excluyendo productos sin descuentos (sinDescuentos=true)
+      const activeFixedHeaders = [];
+      for (let i = 1; i <= 4; i++) {
+        if (data.some(r => !r.sinDescuentos && (r[`desc${i}`] || 0) > 0)) {
+          activeFixedHeaders.push(`desc_fijos_${i}_%`);
+        }
+      }
 
       // Agregar solo las columnas de descuentos adicionales activadas
       const manualHeaders = [];
@@ -673,6 +440,8 @@ export default function App() {
 
       const finalHeader = [
         ...baseHeader,
+        ...clientDiscounts,
+        ...activeFixedHeaders,
         ...manualHeaders,
         'precio_neto',
         'con_igv'
@@ -683,13 +452,17 @@ export default function App() {
           r.codigo ?? '',
           r.linea ?? '',
           r.nombre ?? '',
-          r.precio_lista,
-          r.sinDescuentos ? 0 : compoundHidden, // Descuentos variables (0% si "Sin Descuentos")
-          r.sinDescuentos ? 0 : (r.desc1 || 0), // Descuentos fijos 1 (0% si "Sin Descuentos")
-          r.sinDescuentos ? 0 : (r.desc2 || 0), // Descuentos fijos 2 (0% si "Sin Descuentos")
-          r.sinDescuentos ? 0 : (r.desc3 || 0), // Descuentos fijos 3 (0% si "Sin Descuentos")
-          r.sinDescuentos ? 0 : (r.desc4 || 0), // Descuentos fijos 4 (0% si "Sin Descuentos")
+          r.precio_lista
         ];
+
+        // Descuento cliente (solo si tiene valor > 0)
+        const clientData = compoundHidden > 0 ? [r.sinDescuentos ? 0 : compoundHidden] : [];
+
+        // Descuentos fijos (solo los activos)
+        const fixedData = activeFixedHeaders.map((_, i) => {
+          const descIndex = i + 1;
+          return r.sinDescuentos ? 0 : (r[`desc${descIndex}`] || 0);
+        });
 
         // Agregar solo los valores de descuentos manuales activados
         const manualData = [];
@@ -699,6 +472,8 @@ export default function App() {
 
         const finalData = [
           ...baseData,
+          ...clientData,
+          ...fixedData,
           ...manualData,
           r.neto,             // Precio neto final
           r.final             // Precio con IGV
@@ -718,12 +493,13 @@ export default function App() {
         { wch: 16 }, // Línea
         { wch: 40 }, // Nombre
         { wch: 14 }, // Precio base
-        { wch: 18 }, // Descuentos ocultos
-        { wch: 16 }, // Descuentos fijos 1
-        { wch: 16 }, // Descuentos fijos 2
-        { wch: 16 }, // Descuentos fijos 3
-        { wch: 16 }, // Descuentos fijos 4
       ];
+
+      // Agregar ancho para descuento cliente si existe
+      const clientWidths = compoundHidden > 0 ? [{ wch: 18 }] : [];
+
+      // Agregar anchos para descuentos fijos activos
+      const fixedWidths = activeFixedHeaders.map(() => ({ wch: 16 }));
 
       // Agregar anchos para descuentos manuales activados
       const manualWidths = [];
@@ -733,6 +509,8 @@ export default function App() {
 
       const finalWidths = [
         ...baseWidths,
+        ...clientWidths,
+        ...fixedWidths,
         ...manualWidths,
         { wch: 14 }, // Precio neto
         { wch: 14 }  // Con IGV
@@ -744,19 +522,53 @@ export default function App() {
       ws['!freeze'] = { xSplit: 0, ySplit: 1 };
 
       // Calcular índices de columnas dinámicamente
+      let currentCol = baseHeader.length; // Después de baseHeader
       const precioListaCol = 3; // Siempre columna 3
-      const descuentosVariablesCol = 4; // Siempre columna 4
-      const descuentosFijosStart = 5; // Columnas 5,6,7,8 para descuentos fijos
-      const descuentosFijosEnd = 8;
-      const descuentosManualesStart = 9; // Después de descuentos fijos
-      const descuentosManualesEnd = 8 + descManualCount; // 9 + número de manuales activados - 1
-      const precioNetoCol = finalHeader.length - 2; // Penúltima columna
-      const conIgvCol = finalHeader.length - 1; // Última columna
 
-      // Estilo de la fila de encabezado (negrita)
+      let descuentosVariablesCol = -1;
+      if (compoundHidden > 0) {
+        descuentosVariablesCol = currentCol;
+        currentCol += 1;
+      }
+
+      const descuentosFijosStart = currentCol;
+      const descuentosFijosEnd = currentCol + activeFixedHeaders.length - 1;
+      currentCol += activeFixedHeaders.length;
+
+      const descuentosManualesStart = currentCol;
+      const descuentosManualesEnd = currentCol + descManualCount - 1;
+      currentCol += descManualCount;
+
+      const precioNetoCol = currentCol;
+      const conIgvCol = currentCol + 1;
+
+      // Estilo mejorado de la fila de encabezado
       for (let C = 0; C < finalHeader.length; C++) {
         const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
-        if (cell) cell.s = { font: { bold: true } };
+        if (cell) {
+          cell.s = {
+            font: {
+              bold: true,
+              sz: 11,
+              color: { rgb: "FFFFFF" }
+            },
+            fill: {
+              fgColor: { rgb: "2563EB" }, // Azul profesional
+              patternType: "solid"
+            },
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } }
+            },
+            alignment: {
+              horizontal: "center",
+              vertical: "center",
+              wrapText: true
+            }
+          };
+        }
       }
 
       // Formatear columnas de dinero
@@ -766,14 +578,39 @@ export default function App() {
           const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
           if (cell) cell.z = '#,##0.00';
         }
+        // Estilo alterno para filas (zebra striping)
+        if (R % 2 === 0) {
+          for (let C = 0; C < finalHeader.length; C++) {
+            const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+            if (cell && !cell.s) {
+              cell.s = {
+                fill: {
+                  fgColor: { rgb: "F8FAFC" }, // Gris muy claro
+                  patternType: "solid"
+                }
+              };
+            }
+          }
+        }
       }
 
       // Formatear columnas de porcentajes (todas las de descuentos)
-      const percentCols = new Set([
-        descuentosVariablesCol, // Descuentos ocultos
-        ...Array.from({length: 4}, (_, i) => descuentosFijosStart + i), // Descuentos fijos 1-4
-        ...Array.from({length: descManualCount}, (_, i) => descuentosManualesStart + i), // Descuentos manuales activados
-      ]);
+      const percentCols = new Set();
+
+      // Agregar columna de descuentos cliente si existe
+      if (descuentosVariablesCol >= 0) {
+        percentCols.add(descuentosVariablesCol);
+      }
+
+      // Agregar columnas de descuentos fijos activos
+      for (let i = 0; i < activeFixedHeaders.length; i++) {
+        percentCols.add(descuentosFijosStart + i);
+      }
+
+      // Agregar columnas de descuentos manuales
+      for (let i = 0; i < descManualCount; i++) {
+        percentCols.add(descuentosManualesStart + i);
+      }
 
       for (let R = 1; R < aoa.length; R++) {
         for (const C of percentCols) {
@@ -834,18 +671,20 @@ export default function App() {
       // Filtrar descuentos cliente activos
       const clientDiscounts = compoundHidden > 0 ? ['descuento_cliente_%'] : [];
 
-      // Filtrar descuentos fijos solo si tienen valores > 0 en esta línea
+      // Filtrar descuentos fijos solo si tienen valores > 0 en TODA la base de datos
+      // Excluyendo productos sin descuentos (sinDescuentos=true)
       const activeFixedHeaders = [];
       for (let i = 1; i <= 4; i++) {
-        if (rowsForLine.some(r => (r[`desc${i}`] || 0) > 0 && !r.sinDescuentos)) {
+        if (data.some(r => !r.sinDescuentos && (r[`desc${i}`] || 0) > 0)) {
           activeFixedHeaders.push(`desc_fijos_${i}_%`);
         }
       }
 
-      // Agregar descuentos manuales solo si están activados
+      // Agregar descuentos manuales solo si tienen valores > 0 en TODA la base de datos
+      // Excluyendo productos sin descuentos (sinDescuentos=true)
       const manualHeaders = [];
       for (let i = 1; i <= descManualCount; i++) {
-        if (rowsForLine.some(r => (r[`descManual${i}`] || 0) > 0)) {
+        if (data.some(r => !r.sinDescuentos && (r[`descManual${i}`] || 0) > 0)) {
           manualHeaders.push(`desc_adicionales_${i}_%`);
         }
       }
@@ -940,10 +779,33 @@ export default function App() {
       const precioNetoCol = currentCol;
       const precioIgvCol = currentCol + 1;
 
-      // Estilo de la fila de encabezado (negrita)
+      // Estilo mejorado de la fila de encabezado
       for (let C = 0; C < finalHeader.length; C++) {
         const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
-        if (cell) cell.s = { font: { bold: true } };
+        if (cell) {
+          cell.s = {
+            font: {
+              bold: true,
+              sz: 11,
+              color: { rgb: "FFFFFF" }
+            },
+            fill: {
+              fgColor: { rgb: "059669" }, // Verde profesional para hoja de pedido
+              patternType: "solid"
+            },
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } }
+            },
+            alignment: {
+              horizontal: "center",
+              vertical: "center",
+              wrapText: true
+            }
+          };
+        }
       }
 
       // Formatear columnas de dinero
@@ -952,6 +814,20 @@ export default function App() {
         for (const C of moneyCols) {
           const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
           if (cell) cell.z = '#,##0.00';
+        }
+        // Estilo alterno para filas (zebra striping)
+        if (R % 2 === 0) {
+          for (let C = 0; C < finalHeader.length; C++) {
+            const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+            if (cell && !cell.s) {
+              cell.s = {
+                fill: {
+                  fgColor: { rgb: "F0FDF4" }, // Verde muy claro para hoja de pedido
+                  patternType: "solid"
+                }
+              };
+            }
+          }
         }
       }
 

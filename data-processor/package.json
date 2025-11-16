@@ -1,0 +1,13 @@
+{
+  "name": "data-processor",
+  "version": "1.0.0",
+  "description": "Procesador de datos para app de cotización",
+  "main": "processor.js",
+  "scripts": {
+    "process": "node processor.js",
+    "dev": "node processor.js"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
