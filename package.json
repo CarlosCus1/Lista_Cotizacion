@@ -2,7 +2,7 @@
   "name": "lista-cotizacion",
   "version": "1.1.0",
   "description": "Aplicación web para catálogo de precios interactivo con cotizaciones",
-  "homepage": "https://tu-usuario.github.io/Lista_Cotizacion",
+  "homepage": "https://CarlosCus1.github.io/Lista_Cotizacion",
   "type": "module",
   "main": "index.js",
   "scripts": {
