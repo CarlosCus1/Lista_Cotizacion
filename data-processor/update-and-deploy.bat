@@ -64,4 +64,3 @@ if %errorlevel% neq 0 (
 
 echo 🎉 Actualización completada exitosamente!
 echo 📅 Los cambios estarán disponibles en GitHub Pages en unos minutos
-pause
