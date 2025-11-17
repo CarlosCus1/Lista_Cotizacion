@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 echo 🚀 Iniciando actualización automática de datos de cotización
 echo.
 
