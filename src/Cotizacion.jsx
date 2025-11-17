@@ -38,6 +38,18 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
   const [selectionSaved, setSelectionSaved] = useState(false);
   const [selectionLastSaved, setSelectionLastSaved] = useState(null);
 
+  // Estado para ordenamiento y paginación de la tabla de resumen
+  const [sortKey, setSortKey] = useState('codigo');
+  const [sortDir, setSortDir] = useState('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
+  // Estado para ordenamiento y paginación de la tabla de selección
+  const [selectionSortKey, setSelectionSortKey] = useState('codigo');
+  const [selectionSortDir, setSelectionSortDir] = useState('asc');
+  const [selectionCurrentPage, setSelectionCurrentPage] = useState(1);
+  const [selectionPageSize, setSelectionPageSize] = useState(50);
+
   // Cargar selección guardada al montar el componente
   useEffect(() => {
     const saved = localStorage.getItem('cotizacion_seleccion');
@@ -94,12 +106,36 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
       );
     }
 
-    return filtered;
-  }, [catalogData, selectedLine, debouncedSearch]);
+    // Ordenar
+    const sorted = [...filtered].sort((a, b) => {
+      let res = 0;
+      if (selectionSortKey === 'codigo') {
+        res = String(a.codigo).localeCompare(String(b.codigo), undefined, { numeric: true, sensitivity: 'base' });
+      } else if (selectionSortKey === 'nombre') {
+        res = String(a.nombre).localeCompare(String(b.nombre), undefined, { sensitivity: 'base' });
+      } else if (selectionSortKey === 'stock') {
+        res = (a.stock || 0) - (b.stock || 0);
+      } else if (selectionSortKey === 'precio_lista') {
+        res = a.precio_lista - b.precio_lista;
+      } else if (selectionSortKey === 'precio_igv') {
+        res = (a.precio_lista * (1 + IGV)) - (b.precio_lista * (1 + IGV));
+      }
+      return selectionSortDir === 'asc' ? res : -res;
+    });
+
+    return sorted;
+  }, [catalogData, selectedLine, debouncedSearch, selectionSortKey, selectionSortDir]);
+
+  // Paginación para selección
+  const selectionTotalItems = filteredCatalog.length;
+  const selectionTotalPages = Math.ceil(selectionTotalItems / selectionPageSize);
+  const selectionStartIndex = (selectionCurrentPage - 1) * selectionPageSize;
+  const selectionEndIndex = selectionStartIndex + selectionPageSize;
+  const paginatedCatalog = filteredCatalog.slice(selectionStartIndex, selectionEndIndex);
 
   // Calcular productos de cotización con precios
   const quotationProducts = useMemo(() => {
-    return quotedItems.map(item => {
+    let products = quotedItems.map(item => {
       const productWithManualDiscounts = {
         ...item.product,
         descManual1: item.manualDiscounts[0] || 0,
@@ -130,7 +166,37 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         totalConIgv,
       };
     });
-  }, [quotedItems, descOcultos]);
+
+    // Ordenar productos
+    products.sort((a, b) => {
+      let res = 0;
+      if (sortKey === 'codigo') {
+        res = String(a.codigo).localeCompare(String(b.codigo), undefined, { numeric: true, sensitivity: 'base' });
+      } else if (sortKey === 'nombre') {
+        res = String(a.nombre).localeCompare(String(b.nombre), undefined, { sensitivity: 'base' });
+      } else if (sortKey === 'cantidad') {
+        res = a.quantity - b.quantity;
+      } else if (sortKey === 'precio_base') {
+        res = a.precio_lista - b.precio_lista;
+      } else if (sortKey === 'precio_unitario') {
+        res = a.unitPrice - b.unitPrice;
+      } else if (sortKey === 'subtotal') {
+        res = parseFloat(a.totalSinIgv) - parseFloat(b.totalSinIgv);
+      } else if (sortKey === 'total') {
+        res = parseFloat(a.totalConIgv) - parseFloat(b.totalConIgv);
+      }
+      return sortDir === 'asc' ? res : -res;
+    });
+
+    return products;
+  }, [quotedItems, descOcultos, sortKey, sortDir]);
+
+  // Paginación para cotización
+  const totalItems = quotationProducts.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedProducts = quotationProducts.slice(startIndex, endIndex);
 
   // Calcular totales
   const totals = useMemo(() => {
@@ -197,6 +263,28 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
       ...prev,
       [field]: cleanValue
     }));
+  };
+
+  // Función de ordenamiento para tabla de resumen
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+    setCurrentPage(1); // Resetear página al cambiar orden
+  };
+
+  // Función de ordenamiento para tabla de selección
+  const handleSelectionSort = (key) => {
+    if (selectionSortKey === key) {
+      setSelectionSortDir(selectionSortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSelectionSortKey(key);
+      setSelectionSortDir('asc');
+    }
+    setSelectionCurrentPage(1); // Resetear página al cambiar orden
   };
 
   // Exportar a Excel
@@ -427,7 +515,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                       onChange={(e) => {
                         if (e.target.checked) {
                           // Seleccionar todos los productos visibles
-                          const allProducts = filteredCatalog.map(p => ({ product: p, quantity: 1, manualDiscounts: [0, 0] }));
+                          const allProducts = paginatedCatalog.map(p => ({ product: p, quantity: 1, manualDiscounts: [0, 0] }));
                           setQuotedItems(allProducts);
                         } else {
                           // Deseleccionar todos
@@ -437,16 +525,41 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                     />
                   </th>
-                  <th scope="col" className="px-4 py-3">Código</th>
-                  <th scope="col" className="px-4 py-3">Nombre</th>
-                  <th scope="col" className="px-4 py-3 text-center">Stock</th>
+                  <th scope="col" className="px-4 py-3">
+                    <button onClick={() => handleSelectionSort('codigo')} className="hover:text-blue-600 flex items-center gap-1">
+                      Código
+                      {selectionSortKey === 'codigo' && <span>{selectionSortDir === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    <button onClick={() => handleSelectionSort('nombre')} className="hover:text-blue-600 flex items-center gap-1">
+                      Nombre
+                      {selectionSortKey === 'nombre' && <span>{selectionSortDir === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-center">
+                    <button onClick={() => handleSelectionSort('stock')} className="hover:text-blue-600 flex items-center gap-1">
+                      Stock
+                      {selectionSortKey === 'stock' && <span>{selectionSortDir === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
                   <th scope="col" className="px-4 py-3 text-center">Cantidad</th>
-                  <th scope="col" className="px-4 py-3 text-right">Precio s/IGV</th>
-                  <th scope="col" className="px-4 py-3 text-right">Precio c/IGV</th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    <button onClick={() => handleSelectionSort('precio_lista')} className="hover:text-blue-600 flex items-center gap-1">
+                      Precio s/IGV
+                      {selectionSortKey === 'precio_lista' && <span>{selectionSortDir === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    <button onClick={() => handleSelectionSort('precio_igv')} className="hover:text-blue-600 flex items-center gap-1">
+                      Precio c/IGV
+                      {selectionSortKey === 'precio_igv' && <span>{selectionSortDir === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredCatalog.map((product) => {
+                {paginatedCatalog.map((product) => {
                   const selectedItem = quotationProducts.find(p => p.idx === product.idx);
                   const isSelected = !!selectedItem;
 
@@ -498,6 +611,51 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
           </div>
         </div>
 
+        {/* Controles de Paginación para Selección */}
+        {selectionTotalPages > 1 && (
+          <div className="bg-white border-t border-gray-200 px-4 py-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-700">Mostrar:</label>
+                <select
+                  value={selectionPageSize}
+                  onChange={(e) => {
+                    setSelectionPageSize(Number(e.target.value));
+                    setSelectionCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-600">por página</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectionCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={selectionCurrentPage === 1}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ‹ Anterior
+                </button>
+
+                <span className="text-sm text-gray-700">
+                  Página {selectionCurrentPage} de {selectionTotalPages}
+                </span>
+
+                <button
+                  onClick={() => setSelectionCurrentPage(prev => Math.min(selectionTotalPages, prev + 1))}
+                  disabled={selectionCurrentPage === selectionTotalPages}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Siguiente ›
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tabla de Resumen de Cotización */}
         {quotationProducts.length > 0 && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border-2 border-green-100">
@@ -506,20 +664,55 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
               <table className="w-full text-sm text-left text-gray-500">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-4 py-3">Código</th>
-                    <th scope="col" className="px-4 py-3">Nombre</th>
-                    <th scope="col" className="px-4 py-3 text-center">Cantidad</th>
-                    <th scope="col" className="px-4 py-3 text-right">Precio Base</th>
+                    <th scope="col" className="px-4 py-3">
+                      <button onClick={() => handleSort('codigo')} className="hover:text-blue-600 flex items-center gap-1">
+                        Código
+                        {sortKey === 'codigo' && <span>{sortDir === 'asc' ? '▲' : '▼'}</span>}
+                      </button>
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      <button onClick={() => handleSort('nombre')} className="hover:text-blue-600 flex items-center gap-1">
+                        Nombre
+                        {sortKey === 'nombre' && <span>{sortDir === 'asc' ? '▲' : '▼'}</span>}
+                      </button>
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-center">
+                      <button onClick={() => handleSort('cantidad')} className="hover:text-blue-600 flex items-center gap-1">
+                        Cantidad
+                        {sortKey === 'cantidad' && <span>{sortDir === 'asc' ? '▲' : '▼'}</span>}
+                      </button>
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right">
+                      <button onClick={() => handleSort('precio_base')} className="hover:text-blue-600 flex items-center gap-1">
+                        Precio Base
+                        {sortKey === 'precio_base' && <span>{sortDir === 'asc' ? '▲' : '▼'}</span>}
+                      </button>
+                    </th>
                     <th scope="col" className="px-4 py-3 text-center">Desc. Cliente (%)</th>
                     <th scope="col" className="px-4 py-3 text-center">Desc. Producto (%)</th>
-                    <th scope="col" className="px-4 py-3 text-right">Precio Unitario</th>
-                    <th scope="col" className="px-4 py-3 text-right">Subtotal</th>
-                    <th scope="col" className="px-4 py-3 text-right">Total c/IGV</th>
+                    <th scope="col" className="px-4 py-3 text-right">
+                      <button onClick={() => handleSort('precio_unitario')} className="hover:text-blue-600 flex items-center gap-1">
+                        Precio Unitario
+                        {sortKey === 'precio_unitario' && <span>{sortDir === 'asc' ? '▲' : '▼'}</span>}
+                      </button>
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right">
+                      <button onClick={() => handleSort('subtotal')} className="hover:text-blue-600 flex items-center gap-1">
+                        Subtotal
+                        {sortKey === 'subtotal' && <span>{sortDir === 'asc' ? '▲' : '▼'}</span>}
+                      </button>
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right">
+                      <button onClick={() => handleSort('total')} className="hover:text-blue-600 flex items-center gap-1">
+                        Total c/IGV
+                        {sortKey === 'total' && <span>{sortDir === 'asc' ? '▲' : '▼'}</span>}
+                      </button>
+                    </th>
                     <th scope="col" className="px-4 py-3 text-center">Acción</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {quotationProducts.map((p) => (
+                  {paginatedProducts.map((p) => (
                     <tr key={p.idx} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-2 font-mono font-medium text-gray-900">{p.codigo}</td>
                       <td className="px-4 py-2">
@@ -543,6 +736,51 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Controles de Paginación para Cotización */}
+        {totalPages > 1 && (
+          <div className="bg-white border-t border-gray-200 px-4 py-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-700">Mostrar:</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-600">por página</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ‹ Anterior
+                </button>
+
+                <span className="text-sm text-gray-700">
+                  Página {currentPage} de {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Siguiente ›
+                </button>
+              </div>
             </div>
           </div>
         )}

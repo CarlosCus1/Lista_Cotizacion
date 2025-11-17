@@ -49,12 +49,15 @@ ERP → Stock Completo → Procesador → JSONs → GitHub Pages
 
 ## 📋 Características
 
-- ✅ Catálogo interactivo
-- ✅ Sistema de cotizaciones
-- ✅ Cálculos de descuentos automáticos
-- ✅ Exportación a Excel
-- ✅ Persistencia offline
+- ✅ Catálogo interactivo con paginación (50/100 por página)
+- ✅ Sistema de cotizaciones con ordenamiento y paginación
+- ✅ Cálculos de descuentos automáticos con formato decimal mejorado
+- ✅ Exportación a Excel (lista de precios y hoja de pedido)
+- ✅ Persistencia offline con IndexedDB
 - ✅ Actualización automática de datos
+- ✅ Interfaz responsive con tabla móvil completa
+- ✅ Ordenamiento por múltiples columnas en todas las tablas
+- ✅ UX mejorada en inputs de descuentos (selección automática, formateo)
 
 ## 🛠️ Desarrollo
 

@@ -67,6 +67,10 @@ export default function App() {
   // Estado para la gestión de la vista
   const [currentView, setCurrentView] = useState('catalog'); // 'catalog' or 'quotation'
 
+  // Estado para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
   // Término de búsqueda debounced para mejorar rendimiento
   const debouncedSearch = useDebounce(search, 300);
 
@@ -152,6 +156,18 @@ export default function App() {
       };
     });
   }, [data, categoriasActivas, selectedLine, debouncedSearch, descOcultos, sortKey, sortDir]);
+
+  // Paginación
+  const totalItems = processedRows.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedRows = processedRows.slice(startIndex, endIndex);
+
+  // Resetear página cuando cambian filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedLine, debouncedSearch, categoriasActivas, sortKey, sortDir]);
 
   useEffect(() => {
     // Secuencia de inicialización robusta con recuperación automática
@@ -956,14 +972,15 @@ export default function App() {
                   <div key={i} className="flex flex-col">
                     <label className="text-xs text-gray-600 mb-1 text-center">D{i + 1}</label>
                     <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
+                      type="text"
                       className="border-2 border-gray-300 rounded-lg px-2 py-3 text-center text-base font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       placeholder="0.00"
-                      value={descOcultos[i]}
-                      onChange={(e) => setDescOculto(i, e.target.value)}
+                      defaultValue={descOcultos[i].toFixed(2)}
+                      onFocus={(e) => e.target.select()}
+                      onBlur={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setDescOculto(i, val.toFixed(2));
+                      }}
                     />
                   </div>
                 ))}
@@ -1074,14 +1091,15 @@ export default function App() {
                     {[0, 1, 2, 3].map((i) => (
                       <input
                         key={i}
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
+                        type="text"
                         className="border border-gray-300 rounded-md px-2 py-1 text-sm text-center focus:ring-2 focus:ring-blue-500"
-                        placeholder={`D${i + 1}`}
-                        value={descOcultos[i]}
-                        onChange={(e) => setDescOculto(i, e.target.value)}
+                        placeholder="0.00"
+                        defaultValue={descOcultos[i].toFixed(2)}
+                        onFocus={(e) => e.target.select()}
+                        onBlur={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          setDescOculto(i, val.toFixed(2));
+                        }}
                       />
                     ))}
                   </div>
@@ -1186,7 +1204,7 @@ export default function App() {
               </div>
             ) : (
               <DataTable
-                data={processedRows}
+                data={paginatedRows}
                 formatMoney={formatMoney}
                 descOcultos={descOcultos}
                 descManualCount={descManualCount}
@@ -1199,6 +1217,51 @@ export default function App() {
             )}
           </div>
 
+          {/* Controles de Paginación */}
+          {totalPages > 1 && (
+            <div className="bg-white border-t border-gray-200 px-3 sm:px-4 py-3">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-700">Mostrar:</label>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  >
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span className="text-sm text-gray-600">por página</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ‹ Anterior
+                  </button>
+
+                  <span className="text-sm text-gray-700">
+                    Página {currentPage} de {totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguiente ›
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-gray-50 border-t border-gray-200 text-sm">
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-gray-600 mb-3 sm:mb-0">
               {loading ? (
@@ -1210,7 +1273,7 @@ export default function App() {
                   <span className="text-xs sm:text-sm">Cargando...</span>
                 </div>
               ) : (
-                <span className="font-medium text-xs sm:text-sm">{processedRows.length} registros</span>
+                <span className="font-medium text-xs sm:text-sm">{totalItems} registros</span>
               )}
               {selectedLine !== 'TODAS' && (
                 <span className="text-gray-500 text-xs sm:text-sm">• Línea: <span className="font-medium text-gray-700">{selectedLine}</span></span>
