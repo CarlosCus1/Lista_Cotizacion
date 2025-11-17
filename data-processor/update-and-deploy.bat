@@ -63,5 +63,46 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo 🎉 Actualización completada exitosamente!
+echo 🏗️ Construyendo aplicación...
+call npm run build
+
+if %errorlevel% neq 0 (
+    echo ❌ Error en el build
+    pause
+    exit /b 1
+)
+
+echo 🚀 Desplegando a gh-pages...
+git checkout gh-pages
+
+if %errorlevel% neq 0 (
+    echo ❌ Error cambiando a gh-pages
+    pause
+    exit /b 1
+)
+
+git rm -rf .
+git checkout main -- dist
+move dist\* .
+rd /s /q dist
+git add .
+git commit -m "🚀 Deploy actualización automática - %date% %time%"
+
+if %errorlevel% neq 0 (
+    echo ⚠️  No hay cambios en gh-pages o error en commit
+)
+
+git push origin gh-pages
+
+if %errorlevel% neq 0 (
+    echo ❌ Error al hacer push a gh-pages
+    git checkout main
+    pause
+    exit /b 1
+)
+
+echo 🔄 Regresando a main...
+git checkout main
+
+echo 🎉 Actualización completa exitosamente!
 echo 📅 Los cambios estarán disponibles en GitHub Pages en unos minutos
