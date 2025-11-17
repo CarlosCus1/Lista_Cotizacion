@@ -612,7 +612,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         </div>
 
         {/* Controles de Paginación para Selección */}
-        {selectionTotalPages > 1 && (
+        {selectionTotalItems > 0 && (
           <div className="bg-white border-t border-gray-200 px-4 py-3">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -741,7 +741,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         )}
 
         {/* Controles de Paginación para Cotización */}
-        {totalPages > 1 && (
+        {quotationProducts.length > 0 && (
           <div className="bg-white border-t border-gray-200 px-4 py-3">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-2">
