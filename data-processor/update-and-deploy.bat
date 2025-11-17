@@ -64,6 +64,7 @@ if %errorlevel% neq 0 (
 )
 
 echo 🏗️ Construyendo aplicación...
+cd /d %~dp0\..
 call npm run build
 
 if %errorlevel% neq 0 (
