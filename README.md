@@ -83,3 +83,4 @@ Lista_Cotizacion/
 ├── public/                 # Assets estáticos
 ├── src/                    # Código fuente React
 └── package.json
+Última actualización: 17/11/2025
