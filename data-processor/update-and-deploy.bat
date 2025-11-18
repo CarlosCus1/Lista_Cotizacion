@@ -1,6 +1,8 @@
 @echo off
 chcp 65001 >nul
 
+cd /d %~dp0\..
+
 echo 🚀 Iniciando actualización automática de datos de cotización
 
 echo ­ƒôé Cambiando al directorio del procesador...
