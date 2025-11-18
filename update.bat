@@ -13,6 +13,13 @@ node processor.js
 echo Copiando archivos a public...
 copy outputs\* ..\public
 
+echo Creando timestamp...
+cd ..
+echo %date% %time% > public\last-update.txt
+
+echo Copiando archivos a public...
+copy outputs\* ..\public
+
 echo Verificando archivos generados...
 dir ..\public
 
