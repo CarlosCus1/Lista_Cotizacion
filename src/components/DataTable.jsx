@@ -272,22 +272,22 @@ export default function DataTable({
               {/* Descuentos */}
               <Tooltip content={`Descuento fijo 1: ${r.desc1 ? parseFloat(r.desc1).toFixed(2) : '0.00'}%`} position="top" variant="secondary" delay={200}>
                 <div className="px-1 py-2 text-right tabular-nums font-mono text-gray-500 text-sm border-r border-gray-200 border-b flex items-center justify-center hover:bg-gray-50 h-full">
-                  {r.desc1 ? parseFloat(r.desc1).toFixed(2) : '0.00'}
+                  {r.desc1 ? parseFloat(r.desc1).toFixed(2) : ''}
                 </div>
               </Tooltip>
               <Tooltip content={`Descuento fijo 2: ${r.desc2 ? parseFloat(r.desc2).toFixed(2) : '0.00'}%`} position="top" variant="secondary" delay={200}>
                 <div className="px-1 py-2 text-right tabular-nums font-mono text-gray-500 text-sm border-r border-gray-200 border-b flex items-center justify-center hover:bg-gray-50 h-full">
-                  {r.desc2 ? parseFloat(r.desc2).toFixed(2) : '0.00'}
+                  {r.desc2 ? parseFloat(r.desc2).toFixed(2) : ''}
                 </div>
               </Tooltip>
               <Tooltip content={`Descuento fijo 3: ${r.desc3 ? parseFloat(r.desc3).toFixed(2) : '0.00'}%`} position="top" variant="secondary" delay={200}>
                 <div className="px-1 py-2 text-right tabular-nums font-mono text-gray-500 text-sm border-r border-gray-200 border-b flex items-center justify-center hover:bg-gray-50 h-full">
-                  {r.desc3 ? parseFloat(r.desc3).toFixed(2) : '0.00'}
+                  {r.desc3 ? parseFloat(r.desc3).toFixed(2) : ''}
                 </div>
               </Tooltip>
               <Tooltip content={`Descuento fijo 4: ${r.desc4 ? parseFloat(r.desc4).toFixed(2) : '0.00'}%`} position="top" variant="secondary" delay={200}>
                 <div className="px-1 py-2 text-right tabular-nums font-mono text-gray-500 text-sm border-r border-gray-200 border-b flex items-center justify-center hover:bg-gray-50 h-full">
-                  {r.desc4 ? parseFloat(r.desc4).toFixed(2) : '0.00'}
+                  {r.desc4 ? parseFloat(r.desc4).toFixed(2) : ''}
                 </div>
               </Tooltip>
 
@@ -607,22 +607,22 @@ export default function DataTable({
                   {/* Descuentos */}
                   <Tooltip content={`Descuento fijo 1: ${r.desc1 ? parseFloat(r.desc1).toFixed(2) : '0.00'}%`} position="top" variant="secondary" delay={200}>
                     <div className="px-1 py-1 text-right tabular-nums font-mono text-gray-500 text-xs border-r border-gray-200 border-b flex items-center justify-center hover:bg-gray-50 h-full">
-                      {r.desc1 ? parseFloat(r.desc1).toFixed(2) : '0.00'}
+                      {r.desc1 ? parseFloat(r.desc1).toFixed(2) : ''}
                     </div>
                   </Tooltip>
                   <Tooltip content={`Descuento fijo 2: ${r.desc2 ? parseFloat(r.desc2).toFixed(2) : '0.00'}%`} position="top" variant="secondary" delay={200}>
                     <div className="px-1 py-1 text-right tabular-nums font-mono text-gray-500 text-xs border-r border-gray-200 border-b flex items-center justify-center hover:bg-gray-50 h-full">
-                      {r.desc2 ? parseFloat(r.desc2).toFixed(2) : '0.00'}
+                      {r.desc2 ? parseFloat(r.desc2).toFixed(2) : ''}
                     </div>
                   </Tooltip>
                   <Tooltip content={`Descuento fijo 3: ${r.desc3 ? parseFloat(r.desc3).toFixed(2) : '0.00'}%`} position="top" variant="secondary" delay={200}>
                     <div className="px-1 py-1 text-right tabular-nums font-mono text-gray-500 text-xs border-r border-gray-200 border-b flex items-center justify-center hover:bg-gray-50 h-full">
-                      {r.desc3 ? parseFloat(r.desc3).toFixed(2) : '0.00'}
+                      {r.desc3 ? parseFloat(r.desc3).toFixed(2) : ''}
                     </div>
                   </Tooltip>
                   <Tooltip content={`Descuento fijo 4: ${r.desc4 ? parseFloat(r.desc4).toFixed(2) : '0.00'}%`} position="top" variant="secondary" delay={200}>
                     <div className="px-1 py-1 text-right tabular-nums font-mono text-gray-500 text-xs border-r border-gray-200 border-b flex items-center justify-center hover:bg-gray-50 h-full">
-                      {r.desc4 ? parseFloat(r.desc4).toFixed(2) : '0.00'}
+                      {r.desc4 ? parseFloat(r.desc4).toFixed(2) : ''}
                     </div>
                   </Tooltip>
 
