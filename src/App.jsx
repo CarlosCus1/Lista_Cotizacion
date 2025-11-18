@@ -401,6 +401,26 @@ export default function App() {
      }
    }
 
+   /**
+    * Carga el contador de columnas manuales desde localStorage
+    */
+   async function loadManualColumnsCount() {
+     try {
+       const saved = localStorage.getItem('idb_settings_manualColumns');
+       if (saved) {
+         const count = JSON.parse(saved);
+         if (typeof count === 'number' && count >= 1 && count <= 3) {
+           setDescManualCount(count);
+           return true;
+         }
+       }
+       return false;
+     } catch (error) {
+       console.error('Error cargando contador de columnas manuales:', error);
+       return false;
+     }
+   }
+
 
 
 
