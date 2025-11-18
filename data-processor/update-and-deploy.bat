@@ -73,24 +73,20 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo 🚀 Preparando despliegue...
-xcopy dist ..\temp /s /e /i
-rd /s /q dist
-
 echo 🚀 Desplegando a gh-pages...
 git stash
 git checkout gh-pages
 
 if %errorlevel% neq 0 (
     echo ❌ Error cambiando a gh-pages
-    git stash pop
-    rd /s /q ..\temp
     pause
     exit /b 1
 )
 
-xcopy ..\temp . /s /e /y
-rd /s /q ..\temp
+git rm -rf .
+git checkout main -- dist
+move dist\* .
+rd /s /q dist
 git add .
 git commit -m "🚀 Deploy actualización automática - %date% %time%"
 
