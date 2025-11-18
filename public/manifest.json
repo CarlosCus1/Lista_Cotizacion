@@ -1,9 +1,0 @@
-{
-  "name": "Lista de Cotización",
-  "short_name": "ListaCotizacion",
-  "description": "Aplicación web para catálogo de precios interactivo con sistema de cotizaciones",
-  "start_url": "/Lista_Cotizacion/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#3b82f6"
-}
