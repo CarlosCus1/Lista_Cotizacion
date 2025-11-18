@@ -75,6 +75,7 @@ if %errorlevel% neq 0 (
 
 echo 🚀 Desplegando a gh-pages...
 git stash
+git clean -fd
 git checkout gh-pages
 
 if %errorlevel% neq 0 (
