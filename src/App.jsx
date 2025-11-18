@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { calculatePrice, calculateCompoundHiddenDiscount } from './hooks/usePriceCalculator.js';
 import { useDebounce } from './hooks/useDebounce.js';
