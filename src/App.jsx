@@ -7,9 +7,11 @@ import catalogData from '../data-processor/outputs/catalogo-base.json';
 import discountData from '../data-processor/outputs/descuentos-fijos.json';
 import stockData from '../data-processor/outputs/stock.json';
 import noDiscountData from '../data-processor/outputs/sin-descuentos.json';
-import DataTable from './components/DataTable.jsx';
 import { formatMoney, formatTimeAgo } from './utils/formatters.js';
 import CategoryFilter from './components/CategoryFilter.jsx';
+
+// Lazy loading para DataTable
+const LazyDataTable = React.lazy(() => import('./components/DataTable.jsx'));
 
 
 // Carga diferida del componente Cotizacion para evitar advertencia de ESLint
@@ -1203,17 +1205,26 @@ export default function App() {
                 <p className="text-sm">Intenta ajustar tus filtros o búsqueda.</p>
               </div>
             ) : (
-              <DataTable
-                data={paginatedRows}
-                formatMoney={formatMoney}
-                descOcultos={descOcultos}
-                descManualCount={descManualCount}
-                setDescManualCount={setDescManualCount}
-                updateRow={updateRow}
-                sortKey={sortKey}
-                sortDir={sortDir}
-                handleSort={handleSort}
-              />
+              <React.Suspense fallback={
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Cargando tabla de datos...</p>
+                  </div>
+                </div>
+              }>
+                <LazyDataTable
+                  data={paginatedRows}
+                  formatMoney={formatMoney}
+                  descOcultos={descOcultos}
+                  descManualCount={descManualCount}
+                  setDescManualCount={setDescManualCount}
+                  updateRow={updateRow}
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  handleSort={handleSort}
+                />
+              </React.Suspense>
             )}
           </div>
 

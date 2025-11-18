@@ -27,14 +27,25 @@ function determinarCategoria(codigo, linea) {
 const STOCK_COMPLETO_PATH = 'C:\\Users\\ccusi\\Documents\\Proyect_Coder\\gestion_de_stock\\procesamiento\\data_stock_completo.xlsx';
 
 try {
+  // Verificar que el archivo de stock existe
+  if (!fs.existsSync(STOCK_COMPLETO_PATH)) {
+    throw new Error(`Archivo de stock no encontrado: ${STOCK_COMPLETO_PATH}`);
+  }
+
   // Leer stock completo desde carpeta original
   console.log('📥 Leyendo stock completo desde gestión...');
   const stockWorkbook = XLSX.readFile(STOCK_COMPLETO_PATH);
   const stockCompleto = XLSX.utils.sheet_to_json(stockWorkbook.Sheets[stockWorkbook.SheetNames[0]]);
 
+  // Verificar que el archivo de configuración existe
+  const configPath = './inputs/configuracion_cotizacion.xlsx';
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Archivo de configuración no encontrado: ${configPath}`);
+  }
+
   // Leer configuración desde Excel unificado
   console.log('📋 Leyendo configuración desde Excel unificado...');
-  const configWorkbook = XLSX.readFile('./inputs/configuracion_cotizacion.xlsx');
+  const configWorkbook = XLSX.readFile(configPath);
 
   const codigosCotizacion = XLSX.utils.sheet_to_json(configWorkbook.Sheets['codigos_cotizacion']);
   const descuentosFijos = XLSX.utils.sheet_to_json(configWorkbook.Sheets['descuentos_fijos']);
