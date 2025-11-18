@@ -3,47 +3,49 @@ chcp 65001 >nul
 
 cd /d %~dp0\..
 
-echo 🚀 Iniciando actualización automática de datos de cotización
+echo Iniciando actualizacion automatica de datos de cotizacion
 
-echo ­ƒôé Cambiando al directorio del procesador...
+echo Cambiando al directorio del procesador...
 cd data-processor
 
-echo ­ƒôª Instalando dependencias...
-npm install
+echo Instalando dependencias...
+call npm install
 
-echo ­ƒöº Ejecutando procesamiento...
-node processor.js
+echo Ejecutando procesamiento...
+call node processor.js
 
-echo ­ƒôï Copiando archivos a public...
+echo Copiando archivos a public...
 copy outputs\* ..\public
 
-echo ­ƒôè Verificando archivos generados...
+echo Verificando archivos generados...
 dir ..\public
 
-echo ­ƒöä Preparando commit...
+echo Preparando commit...
 cd ..
-git add .
-git commit -m "🔄 Actualización automática de datos de cotización - %date% %time%"
+git add public/*.json public/last-update.txt
+git commit -m "Actualizacion automatica de datos de cotizacion - %date% %time%"
 
-echo ­ƒôñ Subiendo cambios a main...
+echo Subiendo cambios a main...
 git push origin main
 
-echo 🏗️ Construyendo aplicación...
-npm install
-npm run build
+echo Construyendo aplicacion...
+call npm install
+call npm run build
 
-echo 🚀 Desplegando a gh-pages...
+echo Desplegando a gh-pages...
+git stash
+git clean -fd
 git checkout gh-pages
 git rm -rf .
 git checkout main -- dist
 move dist\* .
 rd /s /q dist
 git add .
-git commit -m "🚀 Deploy actualización automática - %date% %time%"
+git commit -m "Deploy actualizacion automatica - %date% %time%"
 git push origin gh-pages
 
-echo 🔄 Regresando a main...
+echo Regresando a main...
 git checkout main
+git stash pop
 
-echo ✅ Actualización completa exitosamente!
-pause
+echo Actualizacion completa exitosamente!
