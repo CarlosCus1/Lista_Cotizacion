@@ -75,12 +75,15 @@ if %errorlevel% neq 0 (
 
 echo 🚀 Preparando despliegue...
 xcopy dist ..\temp /s /e /i
+rd /s /q dist
 
 echo 🚀 Desplegando a gh-pages...
+git stash
 git checkout gh-pages
 
 if %errorlevel% neq 0 (
     echo ❌ Error cambiando a gh-pages
+    git stash pop
     rd /s /q ..\temp
     pause
     exit /b 1
@@ -106,6 +109,7 @@ if %errorlevel% neq 0 (
 
 echo 🔄 Regresando a main...
 git checkout main
+git stash pop
 
 echo 🎉 Actualización completa exitosamente!
 echo 📅 Los cambios estarán disponibles en GitHub Pages en unos minutos
