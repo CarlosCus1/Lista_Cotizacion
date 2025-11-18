@@ -977,11 +977,12 @@ export default function App() {
                       type="text"
                       className="border-2 border-gray-300 rounded-lg px-2 py-3 text-center text-base font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       placeholder="0.00"
-                      defaultValue={descOcultos[i].toFixed(2)}
+                      defaultValue={descOcultos[i] === 0 ? '' : descOcultos[i].toFixed(2)}
                       onFocus={(e) => e.target.select()}
                       onBlur={(e) => {
                         const val = parseFloat(e.target.value) || 0;
-                        setDescOculto(i, val.toFixed(2));
+                        setDescOculto(i, val);
+                        e.target.value = val === 0 ? '' : val.toFixed(2);
                       }}
                     />
                   </div>
@@ -1096,11 +1097,12 @@ export default function App() {
                         type="text"
                         className="border border-gray-300 rounded-md px-2 py-1 text-sm text-center focus:ring-2 focus:ring-blue-500"
                         placeholder="0.00"
-                        defaultValue={descOcultos[i].toFixed(2)}
+                        defaultValue={descOcultos[i] === 0 ? '' : descOcultos[i].toFixed(2)}
                         onFocus={(e) => e.target.select()}
                         onBlur={(e) => {
                           const val = parseFloat(e.target.value) || 0;
-                          setDescOculto(i, val.toFixed(2));
+                          setDescOculto(i, val);
+                          e.target.value = val === 0 ? '' : val.toFixed(2);
                         }}
                       />
                     ))}
