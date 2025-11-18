@@ -421,6 +421,24 @@ export default function App() {
      }
    }
 
+   /**
+    * Carga los filtros de búsqueda guardados desde localStorage
+    */
+   async function loadSavedSearchFilters() {
+     try {
+       const saved = localStorage.getItem('idb_settings_searchFilters');
+       if (saved) {
+         const filters = JSON.parse(saved);
+         if (filters.selectedLine) setSelectedLine(filters.selectedLine);
+         if (filters.search) setSearch(filters.search);
+         if (filters.categoriasActivas) setCategoriasActivas(filters.categoriasActivas);
+         console.log('Filtros de búsqueda cargados desde localStorage:', filters);
+       }
+     } catch (error) {
+       console.error('Error cargando filtros de búsqueda:', error);
+     }
+   }
+
 
 
 
