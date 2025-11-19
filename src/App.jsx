@@ -8,4 +8,6 @@ import discountData from '../public/descuentos-fijos.json';
 import stockData from '../public/stock.json';
 import noDiscountData from '../public/sin-descuentos.json';
 import { formatMoney, formatTimeAgo } from './utils/formatters.js';
-import CategoryFilter from './components/CategoryFilter.jsx';export default App; 
+import CategoryFilter from './components/CategoryFilter.jsx'; 
+  
+export default App; 
