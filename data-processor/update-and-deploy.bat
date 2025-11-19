@@ -110,3 +110,4 @@ git stash pop
 
 echo 🎉 Actualización completa exitosamente!
 echo 📅 Los cambios estarán disponibles en GitHub Pages en unos minutos
+pause
