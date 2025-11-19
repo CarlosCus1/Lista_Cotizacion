@@ -110,4 +110,5 @@ git stash pop
 
 echo 🎉 Actualización completa exitosamente!
 echo 📅 Los cambios estarán disponibles en GitHub Pages en unos minutos
-pause
+echo Presiona Ctrl+C para cerrar la terminal
+cmd /k
