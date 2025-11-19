@@ -76,6 +76,7 @@ if %errorlevel% neq 0 (
 echo 🚀 Desplegando a gh-pages...
 git add dist
 git commit -m "Build for deploy" || echo "No changes to commit"
+git stash
 git checkout gh-pages
 
 if %errorlevel% neq 0 (
@@ -106,6 +107,7 @@ if %errorlevel% neq 0 (
 
 echo 🔄 Regresando a main...
 git checkout main
+git stash pop
 git reset --hard HEAD~1
 
 echo 🎉 Actualización completa exitosamente!
