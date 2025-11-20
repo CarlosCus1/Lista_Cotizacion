@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Build and Deploy to GitHub Pages
 
 on:
   push:
@@ -8,20 +8,17 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  pages: read
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: "pages-${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  # Job 1: Solo build y validación - se ejecuta en push Y pull_request
+  build:
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -32,22 +29,39 @@ jobs:
         node-version: '18'
         cache: 'npm'
 
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
     - name: Install dependencies
       run: npm ci
 
-    - name: Build
+    - name: Build project
       run: npm run build
 
-    - name: List build output
-      run: ls -la dist/
+    - name: Verify build output
+      run: |
+        if [ ! -d "dist" ]; then
+          echo "❌ Build output directory 'dist' not found!"
+          exit 1
+        fi
+        echo "✅ Build successful - dist/ directory created"
+        ls -la dist/
 
-    - name: Upload artifact
+    - name: Upload build artifact
       uses: actions/upload-pages-artifact@v3
       with:
         path: ./dist
+
+  # Job 2: Solo deploy - solo en push a main
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
 
     - name: Deploy to GitHub Pages
       id: deployment
