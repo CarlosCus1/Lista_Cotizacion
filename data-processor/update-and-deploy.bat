@@ -1,116 +1,54 @@
 @echo off
 chcp 65001 >nul
-echo 🚀 Iniciando actualización automática de datos de cotización
+echo Iniciando actualizacion de datos de cotizacion...
 echo.
 
+:: Cambia al directorio donde se encuentra el script .bat
 cd /d %~dp0
 
-echo 📂 Cambiando al directorio del procesador...
-cd data-processor
-
-echo 📦 Instalando dependencias...
-call npm install
-
-if %errorlevel% neq 0 (
-    echo ❌ Error instalando dependencias
-    pause
-    exit /b 1
-)
-
-echo 🔧 Ejecutando procesamiento...
+echo Ejecutando procesamiento de datos...
 call npm run process
 
 if %errorlevel% neq 0 (
-    echo ❌ Error en el procesamiento
+    echo Error en el procesamiento de datos.
     pause
     exit /b 1
 )
 
-echo 📋 Copiando archivos a public...
+echo.
+echo Los archivos JSON han sido actualizados en la carpeta 'outputs'.
+
+echo.
+echo Copiando archivos a la carpeta 'public' del proyecto principal...
 copy outputs\*.json ..\public\
 
 if %errorlevel% neq 0 (
-    echo ❌ Error copiando archivos
+    echo Error copiando los archivos a la carpeta 'public'.
     pause
     exit /b 1
 )
 
-echo 📊 Verificando archivos generados...
-dir ..\public\*.json
-
-echo 📅 Creando timestamp...
-echo %date% %time% > ..\public\last-update.txt
-
-echo 🔄 Preparando commit...
-cd ..
-git add public/*.json public/last-update.txt
-git status
-
-echo ✍️  Creando commit...
-git commit -m "🔄 Actualización automática de datos de cotización - %date% %time%"
-
+echo.
+echo Archivos JSON actualizados y copiados a la carpeta 'public' correctamente.
+echo.
+echo -------------------------------------------------------------------
+echo.
+echo Realizando commit y push automatico de los archivos JSON...
+cd /d ..
+git add public/*.json
+git diff --cached --quiet
 if %errorlevel% neq 0 (
-    echo ⚠️  No hay cambios para commitear o error en commit
-    echo Esto puede ser normal si los datos no cambiaron
+    git commit -m "Actualizacion automatica de datos JSON"
+    git push origin main
+    if %errorlevel% neq 0 (
+        echo Error en el push. Revisa el repositorio remoto.
+    ) else (
+        echo Commit y push realizados exitosamente.
+    )
+) else (
+    echo No hay cambios en los archivos JSON para commitear.
 )
-
-echo 📤 Subiendo cambios...
-git push origin main
-
-if %errorlevel% neq 0 (
-    echo ❌ Error al hacer push
-    pause
-    exit /b 1
-)
-
-echo 🏗️ Construyendo aplicación...
-cd /d %~dp0\..
-call npm run build
-
-if %errorlevel% neq 0 (
-    echo ❌ Error en el build
-    pause
-    exit /b 1
-)
-
-echo 🚀 Desplegando a gh-pages...
-git add dist
-git commit -m "Build for deploy" || echo "No changes to commit"
-git stash
-git checkout gh-pages
-
-if %errorlevel% neq 0 (
-    echo ❌ Error cambiando a gh-pages
-    pause
-    exit /b 1
-)
-
-git rm -rf .
-git checkout main -- dist
-move dist\* .
-rd /s /q dist
-git add .
-git commit -m "🚀 Deploy actualización automática - %date% %time%"
-
-if %errorlevel% neq 0 (
-    echo ⚠️  No hay cambios en gh-pages o error en commit
-)
-
-git push origin gh-pages
-
-if %errorlevel% neq 0 (
-    echo ❌ Error al hacer push a gh-pages
-    git checkout main
-    pause
-    exit /b 1
-)
-
-echo 🔄 Regresando a main...
-git checkout main
-git stash pop
-git reset --hard HEAD~1
-
-echo 🎉 Actualización completa exitosamente!
-echo 📅 Los cambios estarán disponibles en GitHub Pages en unos minutos
-echo Presiona Ctrl+C para cerrar la terminal
-cmd /k
+echo.
+echo -------------------------------------------------------------------
+echo.
+pause
