@@ -61,7 +61,7 @@ function Get-FileInfo {
 function Analyze-Logs {
     param([int]$DaysBack = 7)
 
-    Write-Status "`n📊 ANÁLISIS DE LOGS (últimos $DaysBack días)" "Cyan"
+    Write-Status "`nANALISIS DE LOGS (ultimos $DaysBack dias)" "Cyan"
 
     if (!(Test-Path $logDir)) {
         Write-Status "❌ Directorio de logs no encontrado: $logDir" "Red"
@@ -73,7 +73,7 @@ function Analyze-Logs {
     Sort-Object LastWriteTime -Descending
 
     if ($logFiles.Count -eq 0) {
-        Write-Status "⚠️ No se encontraron logs en los últimos $DaysBack días" "Yellow"
+        Write-Status "No se encontraron logs en los ultimos $DaysBack dias" "Yellow"
         return
     }
 
@@ -88,7 +88,7 @@ function Analyze-Logs {
         $content = Get-Content $logFile.FullName -Raw
 
         # Contar actualizaciones
-        $updateMatches = [regex]::Matches($content, "ACTUALIZACIÓN COMPLETADA EXITOSAMENTE")
+        $updateMatches = [regex]::Matches($content, "ACTUALIZACION COMPLETADA EXITOSAMENTE")
         $totalUpdates += $updateMatches.Count
 
         $successMatches = [regex]::Matches($content, "SUCCESS")
@@ -110,20 +110,20 @@ function Analyze-Logs {
 
     if ($lastUpdate) {
         $age = (Get-Date) - $lastUpdate
-        Write-Status "   Última actualización: $($lastUpdate.ToString('yyyy-MM-dd HH:mm:ss')) ($([math]::Round($age.TotalHours, 1)) horas atrás)" "White"
+        Write-Status "   Última actualización: $($lastUpdate.ToString('yyyy-MM-dd HH:mm:ss')) ($([math]::Round($age.TotalHours, 1)) horas atras)" "White"
     }
 
     if ($Detailed) {
-        Write-Status "`n📋 Últimos logs:" "Cyan"
+        Write-Status "`nUltimos logs:" "Cyan"
         $logFiles | Select-Object -First 5 | ForEach-Object {
             $age = (Get-Date) - $_.LastWriteTime
-            Write-Status "   $($_.Name) - $([math]::Round($age.TotalHours, 1))h atrás - $([math]::Round($_.Length / 1KB, 1))KB" "Gray"
+            Write-Status "   $($_.Name) - $([math]::Round($age.TotalHours, 1))h atras - $([math]::Round($_.Length / 1KB, 1))KB" "Gray"
         }
     }
 }
 
 function Check-ScheduledTask {
-    Write-Status "`n⏰ ESTADO DE TAREA PROGRAMADA" "Cyan"
+    Write-Status "`nESTADO DE TAREA PROGRAMADA" "Cyan"
 
     try {
         $task = schtasks /query /tn "CotizacionDataUpdate" /fo CSV /nh 2>$null |
@@ -148,7 +148,7 @@ function Check-ScheduledTask {
 }
 
 function Check-Backups {
-    Write-Status "`n💾 ESTADO DE BACKUPS" "Cyan"
+    Write-Status "`nESTADO DE BACKUPS" "Cyan"
 
     if (!(Test-Path $backupDir)) {
         Write-Status "❌ Directorio de backups no encontrado: $backupDir" "Red"
@@ -182,13 +182,13 @@ function Check-Backups {
 
 # Script principal
 Write-Status "=========================================" "Cyan"
-Write-Status "🔍 MONITOREO DEL SISTEMA DE ACTUALIZACIÓN" "Cyan"
+Write-Status "MONITOREO DEL SISTEMA DE ACTUALIZACION" "Cyan"
 Write-Status "=========================================" "Cyan"
 Write-Status "Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" "Gray"
 Write-Status ""
 
 # Verificar archivos principales
-Write-Status "📁 VERIFICACIÓN DE ARCHIVOS" "Cyan"
+Write-Status "VERIFICACION DE ARCHIVOS" "Cyan"
 
 Get-FileInfo (Join-Path $publicDir "catalogo-base.json") "Catálogo Base"
 Get-FileInfo (Join-Path $publicDir "stock.json") "Stock"
@@ -206,7 +206,7 @@ Check-ScheduledTask
 Check-Backups
 
 # Resumen de estado general
-Write-Status "`n🏥 DIAGNÓSTICO GENERAL" "Cyan"
+Write-Status "`nDIAGNOSTICO GENERAL" "Cyan"
 
 $issues = @()
 
@@ -241,4 +241,4 @@ Write-Status "   • Limpiar logs antiguos: npm run logs:clean" "Gray"
 Write-Status "   • Crear tarea programada: npm run schedule:create" "Gray"
 
 Write-Status ""
-Write-Status "🎯 Monitoreo completado - $(Get-Date -Format 'HH:mm:ss')" "Green"
+Write-Status "Monitoreo completado - $(Get-Date -Format 'HH:mm:ss')" "Green"
