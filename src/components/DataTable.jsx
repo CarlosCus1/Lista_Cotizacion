@@ -1,5 +1,5 @@
 import React from 'react';
-import { calculatePrice } from '../hooks/usePriceCalculator.js';
+
 import Tooltip from './Tooltip.jsx';
 
 export default function DataTable({

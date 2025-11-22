@@ -2,7 +2,7 @@
 import * as XLSX from 'xlsx';
 import { calculatePrice } from './hooks/usePriceCalculator';
 import { useDebounce } from './hooks/useDebounce';
-import { toFixed2, formatMoney, formatTimeAgo } from './utils/formatters.js';
+import { formatMoney, formatTimeAgo } from './utils/formatters.js';
 
 const IGV = 0.18;
 

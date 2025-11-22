@@ -34,38 +34,9 @@ const LazyCotizacion = (props) => {
         </div>
       </div>
     );
-  }
-
-  return <CotizacionComponent {...props} />;
-};
-
-
-export default function App() {
-  // Estado para datos de productos y carga
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState('');
-
-  useEffect(() => {
-    fetch('/last-update.txt')
-      .then(response => response.text())
-      .then(text => setLastUpdate(text.trim()));
-  }, []);
-
-  // Estado para la lista negra de productos sin descuentos
-  const [noDiscountList, setNoDiscountList] = useState(new Set());
-
-  // Estado para filtros y ordenación
-  const [selectedLine, setSelectedLine] = useState('TODAS');
-  const [search, setSearch] = useState('');
-  const [descOcultos, setDescOcultos] = useState([0, 0, 0, 0]);
-  const [descManualCount, setDescManualCount] = useState(1);
-
-  // Estado para categorías principales activas
-  const [categoriasActivas, setCategoriasActivas] = useState({
     vinifan: true,
-    viniball: false,
-    representadas: false
+      viniball: false,
+        representadas: false
   });
 
   const [sortKey, setSortKey] = useState('codigo');
@@ -1076,282 +1047,360 @@ export default function App() {
             </div>
           </div>
 
-        {/* Escritorio: Diseño Reorganizado */}
-        <div className="hidden md:grid md:grid-cols-3 md:gap-4">
-          {/* Columna Izquierda y Central: Controles y Filtros */}
-          <div className="md:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Sección de Filtros */}
-            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-3">
-              <div className="flex justify-between items-center border-b pb-2">
-                <h3 className="text-md font-semibold text-gray-800">Filtros</h3>
-                {lastUpdate && (
-                  <Tooltip content={`Última actualización: ${lastUpdate}`} position="bottom">
-                    <svg className="w-5 h-5 text-gray-400 hover:text-primary-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  </Tooltip>
-                )}
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Mostrar categoria</label>
-                <select
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={selectedLine}
-                  onChange={(e) => setSelectedLine(e.target.value)}
-                >
-                  <option value="TODAS">Todas las líneas</option>
-                  {lineOptions.map((l) => (
-                    <option key={l} value={l}>
-                      {l}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Mostrar producto</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Buscar por código o nombre..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Sección de Descuentos y Opciones */}
-            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-3">
-              <h3 className="text-md font-semibold text-gray-800 border-b pb-2">Descuentos y Opciones</h3>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Descuentos Cliente
-                  {descOcultos.some(v => v > 0) && (
-                    <span className="ml-2 text-blue-600 font-bold">
-                      (Total: {parseFloat(calculateCompoundHiddenDiscount(descOcultos)).toFixed(2)}%)
-                    </span>
+          {/* Escritorio: Diseño Reorganizado */}
+          <div className="hidden md:grid md:grid-cols-3 md:gap-4">
+            {/* Columna Izquierda y Central: Controles y Filtros */}
+            <div className="md:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Sección de Filtros */}
+              <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-3">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h3 className="text-md font-semibold text-gray-800">Filtros</h3>
+                  {lastUpdate && (
+                    <Tooltip content={`Última actualización: ${lastUpdate}`} position="bottom">
+                      <svg className="w-5 h-5 text-gray-400 hover:text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </Tooltip>
                   )}
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[0, 1, 2, 3].map((i) => (
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Mostrar categoria</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={selectedLine}
+                    onChange={(e) => setSelectedLine(e.target.value)}
+                  >
+                    <option value="TODAS">Todas las líneas</option>
+                    {lineOptions.map((l) => (
+                      <option key={l} value={l}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Mostrar producto</label>
+                  <input
+                    type="text"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Buscar por código o nombre..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Sección de Descuentos y Opciones */}
+              <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-3">
+                <h3 className="text-md font-semibold text-gray-800 border-b pb-2">Descuentos y Opciones</h3>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Descuentos Cliente
+                    {descOcultos.some(v => v > 0) && (
+                      <span className="ml-2 text-blue-600 font-bold">
+                        (Total: {parseFloat(calculateCompoundHiddenDiscount(descOcultos)).toFixed(2)}%)
+                      </span>
+                    )}
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[0, 1, 2, 3].map((i) => (
+                      <input
+                        key={i}
+                        type="text"
+                        className="border border-gray-300 rounded-md px-2 py-1 text-sm text-center focus:ring-2 focus:ring-blue-500"
+                        placeholder="0.00"
+                        defaultValue={descOcultos[i] === 0 ? '' : descOcultos[i].toFixed(2)}
+                        onFocus={(e) => e.target.select()}
+                        onBlur={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          setDescOculto(i, val);
+                          e.target.value = val === 0 ? '' : val.toFixed(2);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Columnas Manuales</label>
+                  <div className="flex items-center justify-center gap-2 bg-gray-50 p-1 rounded-md">
+                    <button
+                      onClick={() => setDescManualCount(Math.max(1, descManualCount - 1))}
+                      disabled={descManualCount <= 1}
+                      className="w-7 h-7 bg-danger-500 hover:bg-danger-600 text-white rounded-full text-md font-bold flex items-center justify-center transition-colors disabled:bg-gray-300"
+                      title="Quitar columna manual"
+                    >
+                      −
+                    </button>
+                    <span className="text-md font-bold text-gray-700 min-w-[2rem] text-center">{descManualCount}</span>
+                    <button
+                      onClick={() => setDescManualCount(Math.min(3, descManualCount + 1))}
+                      disabled={descManualCount >= 3}
+                      className="w-7 h-7 bg-success-500 hover:bg-success-600 text-white rounded-full text-md font-bold flex items-center justify-center transition-colors disabled:bg-gray-300"
+                      title="Agregar columna manual"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección de Categorías Principales */}
+              <div className="lg:col-span-2 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-md font-semibold text-gray-800">Categorías Principales</h3>
+                  <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded font-medium">
+                    {Object.values(categoriasActivas).filter(Boolean).length}/3 activas
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
+                  <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
                     <input
-                      key={i}
-                      type="text"
-                      className="border border-gray-300 rounded-md px-2 py-1 text-sm text-center focus:ring-2 focus:ring-blue-500"
-                      placeholder="0.00"
-                      defaultValue={descOcultos[i] === 0 ? '' : descOcultos[i].toFixed(2)}
-                      onFocus={(e) => e.target.select()}
-                      onBlur={(e) => {
-                        const val = parseFloat(e.target.value) || 0;
-                        setDescOculto(i, val);
-                        e.target.value = val === 0 ? '' : val.toFixed(2);
-                      }}
+                      type="checkbox"
+                      checked={categoriasActivas.vinifan}
+                      onChange={(e) => setCategoriasActivas(prev => ({ ...prev, vinifan: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                     />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Columnas Manuales</label>
-                <div className="flex items-center justify-center gap-2 bg-gray-50 p-1 rounded-md">
-                  <button
-                    onClick={() => setDescManualCount(Math.max(1, descManualCount - 1))}
-                    disabled={descManualCount <= 1}
-                    className="w-7 h-7 bg-danger-500 hover:bg-danger-600 text-white rounded-full text-md font-bold flex items-center justify-center transition-colors disabled:bg-gray-300"
-                    title="Quitar columna manual"
-                  >
-                    −
-                  </button>
-                  <span className="text-md font-bold text-gray-700 min-w-[2rem] text-center">{descManualCount}</span>
-                  <button
-                    onClick={() => setDescManualCount(Math.min(3, descManualCount + 1))}
-                    disabled={descManualCount >= 3}
-                    className="w-7 h-7 bg-success-500 hover:bg-success-600 text-white rounded-full text-md font-bold flex items-center justify-center transition-colors disabled:bg-gray-300"
-                    title="Agregar columna manual"
-                  >
-                    +
-                  </button>
+                    <span className="text-gray-800">🎨 Vinifan</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={categoriasActivas.viniball}
+                      onChange={(e) => setCategoriasActivas(prev => ({ ...prev, viniball: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-gray-800">🏀 Viniball</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={categoriasActivas.representadas}
+                      onChange={(e) => setCategoriasActivas(prev => ({ ...prev, representadas: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-gray-800">🏢 Representadas</span>
+                  </label>
                 </div>
               </div>
             </div>
 
-            {/* Sección de Categorías Principales */}
-            <div className="lg:col-span-2 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-md font-semibold text-gray-800">Categorías Principales</h3>
-                <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded font-medium">
-                  {Object.values(categoriasActivas).filter(Boolean).length}/3 activas
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
-                <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    checked={categoriasActivas.vinifan}
-                    onChange={(e) => setCategoriasActivas(prev => ({ ...prev, vinifan: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-800">🎨 Vinifan</span>
-                </label>
-                <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    checked={categoriasActivas.viniball}
-                    onChange={(e) => setCategoriasActivas(prev => ({ ...prev, viniball: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-800">🏀 Viniball</span>
-                </label>
-                <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    checked={categoriasActivas.representadas}
-                    onChange={(e) => setCategoriasActivas(prev => ({ ...prev, representadas: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-800">🏢 Representadas</span>
-                </label>
-              </div>
+            {/* Columna Derecha: Acciones */}
+            <div className="flex flex-col gap-3 justify-center">
+              <button
+                onClick={() => setCurrentView('quotation')}
+                className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
+                title="Crear una nueva cotización"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd"></path></svg>
+                <span>Crear Cotización</span>
+              </button>
+              <button
+                onClick={downloadPriceList}
+                className="w-full bg-gradient-to-r from-corporate-navy to-blue-900 hover:from-blue-900 hover:to-blue-800 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
+                title="Exportar lista de precios con descuentos aplicados"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                <span>Lista de Precios</span>
+              </button>
+              <button
+                onClick={downloadOrderSheet}
+                className="w-full bg-gradient-to-r from-success-500 to-success-600 hover:from-success-600 hover:to-success-700 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
+                title="Exportar hoja de pedido con stock disponible"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </button>
+              <span className="text-md font-bold text-gray-700 min-w-[2rem] text-center">{descManualCount}</span>
+              <button
+                onClick={() => setDescManualCount(Math.min(3, descManualCount + 1))}
+                disabled={descManualCount >= 3}
+                className="w-7 h-7 bg-success-500 hover:bg-success-600 text-white rounded-full text-md font-bold flex items-center justify-center transition-colors disabled:bg-gray-300"
+                title="Agregar columna manual"
+              >
+                +
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Columna Derecha: Acciones */}
-          <div className="flex flex-col gap-3 justify-center">
-            <button
-              onClick={() => setCurrentView('quotation')}
-              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
-              title="Crear una nueva cotización"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd"></path></svg>
-              <span>Crear Cotización</span>
-            </button>
-            <button
-              onClick={downloadPriceList}
-              className="w-full bg-gradient-to-r from-corporate-navy to-blue-900 hover:from-blue-900 hover:to-blue-800 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
-              title="Exportar lista de precios con descuentos aplicados"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-              <span>Lista de Precios</span>
-            </button>
-            <button
-              onClick={downloadOrderSheet}
-              className="w-full bg-gradient-to-r from-success-500 to-success-600 hover:from-success-600 hover:to-success-700 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
-              title="Exportar hoja de pedido con stock disponible"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <span>Hoja de Pedido</span>
-            </button>
+        {/* Sección de Categorías Principales */}
+        <div className="lg:col-span-2 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-md font-semibold text-gray-800">Categorías Principales</h3>
+            <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded font-medium">
+              {Object.values(categoriasActivas).filter(Boolean).length}/3 activas
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
+            <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
+              <input
+                type="checkbox"
+                checked={categoriasActivas.vinifan}
+                onChange={(e) => setCategoriasActivas(prev => ({ ...prev, vinifan: e.target.checked }))}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-gray-800">🎨 Vinifan</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
+              <input
+                type="checkbox"
+                checked={categoriasActivas.viniball}
+                onChange={(e) => setCategoriasActivas(prev => ({ ...prev, viniball: e.target.checked }))}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-gray-800">🏀 Viniball</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
+              <input
+                type="checkbox"
+                checked={categoriasActivas.representadas}
+                onChange={(e) => setCategoriasActivas(prev => ({ ...prev, representadas: e.target.checked }))}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-gray-800">🏢 Representadas</span>
+            </label>
           </div>
         </div>
-        </div>
-      </header>
+    </div>
 
-      <main className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div className="relative">
-          {processedRows.length === 0 && !loading ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-              <svg className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+{/* Columna Derecha: Acciones */ }
+  <div className="flex flex-col gap-3 justify-center">
+    <button
+      onClick={() => setCurrentView('quotation')}
+      className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
+      title="Crear una nueva cotización"
+    >
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd"></path></svg>
+      <span>Crear Cotización</span>
+    </button>
+    <button
+      onClick={downloadPriceList}
+      className="w-full bg-gradient-to-r from-corporate-navy to-blue-900 hover:from-blue-900 hover:to-blue-800 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
+      title="Exportar lista de precios con descuentos aplicados"
+    >
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+      <span>Lista de Precios</span>
+    </button>
+    <button
+      onClick={downloadOrderSheet}
+      className="w-full bg-gradient-to-r from-success-500 to-success-600 hover:from-success-600 hover:to-success-700 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
+      title="Exportar hoja de pedido con stock disponible"
+    >
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      <span>Hoja de Pedido</span>
+    </button>
+  </div>
+        </div >
+      </div >
+    </header >
+
+  <main className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+      <div className="relative">
+        {processedRows.length === 0 && !loading ? (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+            <svg className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-lg font-medium">No se encontraron productos.</p>
+            <p className="text-sm">Intenta ajustar tus filtros o búsqueda.</p>
+          </div>
+        ) : (
+          <React.Suspense fallback={
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando tabla de datos...</p>
+              </div>
+            </div>
+          }>
+            <LazyDataTable
+              data={paginatedRows}
+              formatMoney={formatMoney}
+              descOcultos={descOcultos}
+              descManualCount={descManualCount}
+              setDescManualCount={setDescManualCount}
+              updateRow={updateRow}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              handleSort={handleSort}
+            />
+          </React.Suspense>
+        )}
+      </div>
+
+      {/* Controles de Paginación */}
+      {totalPages > 1 && (
+        <div className="bg-white border-t border-gray-200 px-3 sm:px-4 py-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-700">Mostrar:</label>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm text-gray-600">por página</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                ‹ Anterior
+              </button>
+
+              <span className="text-sm text-gray-700">
+                Página {currentPage} de {totalPages}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Siguiente ›
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-gray-50 border-t border-gray-200 text-sm">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-gray-600 mb-3 sm:mb-0">
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <p className="text-lg font-medium">No se encontraron productos.</p>
-              <p className="text-sm">Intenta ajustar tus filtros o búsqueda.</p>
+              <span className="text-xs sm:text-sm">Cargando...</span>
             </div>
           ) : (
-            <React.Suspense fallback={
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Cargando tabla de datos...</p>
-                </div>
-              </div>
-            }>
-              <LazyDataTable
-                data={paginatedRows}
-                formatMoney={formatMoney}
-                descOcultos={descOcultos}
-                descManualCount={descManualCount}
-                setDescManualCount={setDescManualCount}
-                updateRow={updateRow}
-                sortKey={sortKey}
-                sortDir={sortDir}
-                handleSort={handleSort}
-              />
-            </React.Suspense>
+            <span className="font-medium text-xs sm:text-sm">{totalItems} registros</span>
+          )}
+          {selectedLine !== 'TODAS' && (
+            <span className="text-gray-500 text-xs sm:text-sm">• Línea: <span className="font-medium text-gray-700">{selectedLine}</span></span>
+          )}
+          {search && (
+            <span className="text-gray-500 text-xs sm:text-sm">• Búsqueda: <span className="font-medium text-gray-700">"{search}"</span></span>
           )}
         </div>
-
-        {/* Controles de Paginación */}
-        {totalPages > 1 && (
-          <div className="bg-white border-t border-gray-200 px-3 sm:px-4 py-3">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-700">Mostrar:</label>
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
-                >
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                <span className="text-sm text-gray-600">por página</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  ‹ Anterior
-                </button>
-
-                <span className="text-sm text-gray-700">
-                  Página {currentPage} de {totalPages}
-                </span>
-
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Siguiente ›
-                </button>
-              </div>
-            </div>
+        {lastUpdate && (
+          <div className="text-xs text-gray-500">
+            Última actualización: {lastUpdate}
           </div>
         )}
-
-        <div className="flex flex-col sm:flex-row items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-gray-50 border-t border-gray-200 text-sm">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-gray-600 mb-3 sm:mb-0">
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span className="text-xs sm:text-sm">Cargando...</span>
-              </div>
-            ) : (
-              <span className="font-medium text-xs sm:text-sm">{totalItems} registros</span>
-            )}
-            {selectedLine !== 'TODAS' && (
-              <span className="text-gray-500 text-xs sm:text-sm">• Línea: <span className="font-medium text-gray-700">{selectedLine}</span></span>
-            )}
-            {search && (
-              <span className="text-gray-500 text-xs sm:text-sm">• Búsqueda: <span className="font-medium text-gray-700">"{search}"</span></span>
-            )}
-          </div>
-          {lastUpdate && (
-            <div className="text-xs text-gray-500">
-              Última actualización: {lastUpdate}
-            </div>
-          )}
-        </div>
       </div>
-    </main>
     </div>
-  );
+  </main>
+  </div >
+);
 }
