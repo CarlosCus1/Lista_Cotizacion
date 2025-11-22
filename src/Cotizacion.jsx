@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { calculatePrice } from './hooks/usePriceCalculator';
 import { useDebounce } from './hooks/useDebounce';
@@ -45,7 +45,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
   const [pageSize, setPageSize] = useState(50);
 
   // Estado para ordenamiento y paginación de la tabla de selección
-  const [selectionSortKey, setSelectionSortKey] = useState('codigo');
+  const [selectionSortKey, setSelectionSortKey] = useState('orden');
   const [selectionSortDir, setSelectionSortDir] = useState('asc');
   const [selectionCurrentPage, setSelectionCurrentPage] = useState(1);
   const [selectionPageSize, setSelectionPageSize] = useState(50);
@@ -89,7 +89,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
 
   // Término de búsqueda debounced para mejorar rendimiento
   const debouncedSearch = useDebounce(search, 300);
-  
+
   const filteredCatalog = useMemo(() => {
     let filtered = catalogData;
 
@@ -109,7 +109,9 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     // Ordenar
     const sorted = [...filtered].sort((a, b) => {
       let res = 0;
-      if (selectionSortKey === 'codigo') {
+      if (selectionSortKey === 'orden') {
+        res = (a.orden || 999999) - (b.orden || 999999);
+      } else if (selectionSortKey === 'codigo') {
         res = String(a.codigo).localeCompare(String(b.codigo), undefined, { numeric: true, sensitivity: 'base' });
       } else if (selectionSortKey === 'nombre') {
         res = String(a.nombre).localeCompare(String(b.nombre), undefined, { sensitivity: 'base' });
@@ -243,7 +245,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
       })
     );
   };
-  
+
   const updateClientData = (field, value) => {
     let cleanValue = value;
 
@@ -293,42 +295,157 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
 
     const wb = XLSX.utils.book_new();
 
-    // Headers de productos con nomenclatura comercial estandarizada
-    const headers = [
-      'ruc',
-      'oc',
-      'codigo',
-      'nombre',
-      'cantidad',
-      'precio_lista',
-      'desc_cliente_%',
-      'desc_fijos_%',
-      'total_neto',
-      'con_igv'
+    // Título del documento
+    const titleData = [
+      ['COTIZACIÓN'],
+      [`Cliente: ${clientData.nombre || 'No especificado'}`],
+      [`RUC: ${clientData.ruc || 'No especificado'}`, `OC: ${clientData.oc || 'No especificado'}`],
+      [`Fecha: ${new Date().toLocaleDateString('es-PE')}`],
+      [], // fila vacía
     ];
 
-    // Datos de productos con nomenclatura comercial estandarizada
-    const productData = quotationProducts.map(p => [
-      clientData.ruc || '',           // ruc
-      clientData.oc || '',            // oc
+    // Headers base de productos
+    const baseHeaders = [
+      'Código',
+      'Nombre',
+      'Cantidad',
+      'Precio Lista'
+    ];
+
+    // Datos base de productos
+    const baseProductData = quotationProducts.map(p => [
       p.codigo,                       // codigo
       p.nombre,                       // nombre
       p.quantity,                     // cantidad
-      p.precio_lista,                   // precio_lista
-      p.descSuma01 ? Math.round(p.descSuma01 * 100) / 100 : 0, // desc_cliente_% (descuentos variables del cliente)
-      p.descSuma02 ? Math.round(p.descSuma02 * 100) / 100 : 0, // desc_fijos_% (descuentos fijos del producto)
-      p.totalSinIgv,                  // total_neto
-      p.totalConIgv                   // con_igv
+      p.precio_lista                  // precio_lista
     ]);
 
-    // Totales al final con nomenclatura estandarizada
+    // Verificar qué descuentos están disponibles y tienen valores > 0
+    const availableDiscounts = [];
+
+    // Descuentos fijos del producto (desc1, desc2, desc3, desc4)
+    for (let i = 1; i <= 4; i++) {
+      const hasValue = quotationProducts.some(p => (p[`desc${i}`] || 0) > 0);
+      if (hasValue) {
+        availableDiscounts.push({
+          key: `desc${i}`,
+          header: `Desc. Fijo ${i} (%)`,
+          dataIndex: baseHeaders.length + availableDiscounts.length
+        });
+      }
+    }
+
+    // Descuentos manuales (descManual1, descManual2, descManual3)
+    for (let i = 1; i <= 3; i++) {
+      const hasValue = quotationProducts.some(p => (p[`descManual${i}`] || 0) > 0);
+      if (hasValue) {
+        availableDiscounts.push({
+          key: `descManual${i}`,
+          header: `Desc. Adic. ${i} (%)`,
+          dataIndex: baseHeaders.length + availableDiscounts.length
+        });
+      }
+    }
+
+    // Agregar headers de descuentos disponibles
+    availableDiscounts.forEach(discount => {
+      baseHeaders.push(discount.header);
+    });
+
+    // Agregar datos de descuentos disponibles
+    baseProductData.forEach((row, index) => {
+      availableDiscounts.forEach(discount => {
+        const value = quotationProducts[index][discount.key] || 0;
+        row.push(Math.round(value * 100) / 100);
+      });
+    });
+
+    // Agregar headers finales
+    baseHeaders.push(
+      'Desc. Cliente (%)',
+      'Desc. Producto (%)',
+      'Precio Unitario',
+      'Subtotal',
+      'Total c/IGV'
+    );
+
+    // Agregar datos finales
+    baseProductData.forEach((row, index) => {
+      const p = quotationProducts[index];
+      row.push(
+        p.descSuma01 ? Math.round(p.descSuma01 * 100) / 100 : 0, // desc_cliente_%
+        p.descSuma02 ? Math.round(p.descSuma02 * 100) / 100 : 0, // desc_fijos_%
+        p.unitPrice,                    // precio_unitario
+        p.totalSinIgv,                  // subtotal
+        p.totalConIgv                   // total_con_igv
+      );
+    });
+
+    // Verificar qué columnas tienen todos valores cero y filtrarlas
+    const columnsToKeep = [];
+    const filteredHeaders = [];
+    const filteredProductData = [];
+    const baseColumnWidths = [
+      { wch: 12 }, // código
+      { wch: 40 }, // nombre
+      { wch: 10 }, // cantidad
+      { wch: 14 }, // precio_lista
+      // Anchos para descuentos dinámicos
+      ...availableDiscounts.map(() => ({ wch: 16 })),
+      { wch: 16 }, // desc_cliente_%
+      { wch: 16 }, // desc_fijos_%
+      { wch: 16 }, // precio_unitario
+      { wch: 14 }, // subtotal
+      { wch: 14 }  // total_con_igv
+    ];
+    const filteredColumnWidths = [];
+
+    baseHeaders.forEach((header, index) => {
+      // Siempre mantener Código, Nombre, Cantidad, Precio Unitario, Subtotal, Total c/IGV
+      const alwaysKeep = ['Código', 'Nombre', 'Cantidad', 'Precio Unitario', 'Subtotal', 'Total c/IGV'].includes(header);
+
+      if (alwaysKeep) {
+        columnsToKeep.push(index);
+        filteredHeaders.push(header);
+        filteredColumnWidths.push(baseColumnWidths[index]);
+      } else {
+        // Verificar si todos los valores en esta columna son cero
+        const allZero = baseProductData.every(row => row[index] === 0 || row[index] === '0' || row[index] === null || row[index] === undefined);
+        if (!allZero) {
+          columnsToKeep.push(index);
+          filteredHeaders.push(header);
+          filteredColumnWidths.push(baseColumnWidths[index]);
+        }
+      }
+    });
+
+    // Filtrar los datos de productos según las columnas a mantener
+    baseProductData.forEach(row => {
+      const filteredRow = columnsToKeep.map(colIndex => row[colIndex]);
+      filteredProductData.push(filteredRow);
+    });
+
+    // Usar headers y datos filtrados
+    const headers = filteredHeaders;
+    const productData = filteredProductData;
+
+    // Crear fila de totales ajustada a las columnas filtradas
+    const totalRow = ['TOTALES'];
+    // Agregar celdas vacías para las columnas que no son totales
+    for (let i = 1; i < headers.length - 2; i++) {
+      totalRow.push('');
+    }
+    // Agregar los totales al final
+    totalRow.push(totals.totalSinIgv, totals.totalConIgv);
+
     const totalsData = [
       [], // fila vacía
-      ['TOTALES', '', '', '', '', '', '', '', totals.totalSinIgv, totals.totalConIgv],
+      totalRow,
     ];
 
-    // Combinar headers, datos y totales
+    // Combinar título, headers, datos y totales
     const aoa = [
+      ...titleData,
       headers,
       ...productData,
       ...totalsData
@@ -336,37 +453,125 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-    // Estilos
+    // Estilos generales
     ws['!autofilter'] = { ref: XLSX.utils.encode_range(XLSX.utils.decode_range(ws['!ref'])) };
-    ws['!freeze'] = { xSplit: 0, ySplit: 1 }; // Freeze header row
+    ws['!freeze'] = { xSplit: 0, ySplit: 6 }; // Freeze después del título
 
-    // Column widths optimizadas para nomenclatura comercial estandarizada
-    ws['!cols'] = [
-      { wch: 12 }, // ruc
-      { wch: 10 }, // oc
-      { wch: 12 }, // codigo
-      { wch: 40 }, // nombre
-      { wch: 10 }, // cantidad
-      { wch: 16 }, // precio_lista
-      { wch: 16 }, // desc_cliente_%
-      { wch: 14 }, // desc_fijos_%
-      { wch: 14 }, // total_neto
-      { wch: 14 }  // con_igv
-    ];
+    // Column widths dinámicas según columnas filtradas
+    ws['!cols'] = filteredColumnWidths;
 
-    // Estilo headers
-    const headerRange = XLSX.utils.decode_range('A1:J1');
-    for (let C = headerRange.s.c; C <= headerRange.e.c; C++) {
-      const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
-      if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: 'FFE6E6FA' } } };
-    }
+    // Definir estilos comunes
+    const borderStyle = {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } }
+    };
 
-    // Estilo fila de totales
-    const totalRowIndex = headers.length + productData.length;
-    const totalRange = XLSX.utils.decode_range(`A${totalRowIndex + 1}:J${totalRowIndex + 1}`);
-    for (let C = totalRange.s.c; C <= totalRange.e.c; C++) {
-      const cell = ws[XLSX.utils.encode_cell({ r: totalRowIndex, c: C })];
-      if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: 'FFD3D3D3' } } };
+    const headerStyle = {
+      font: { bold: true, sz: 11, name: 'Arial' },
+      fill: { fgColor: { rgb: 'FF4F81BD' } },
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: borderStyle
+    };
+
+    const titleStyle = {
+      font: { bold: true, sz: 14, name: 'Arial' },
+      alignment: { horizontal: 'center', vertical: 'center' }
+    };
+
+    const dataStyle = {
+      font: { sz: 10, name: 'Arial' },
+      border: borderStyle
+    };
+
+    const numberStyle = {
+      ...dataStyle,
+      alignment: { horizontal: 'right', vertical: 'center' },
+      numFmt: '#,##0.00'
+    };
+
+    const percentStyle = {
+      ...dataStyle,
+      alignment: { horizontal: 'center', vertical: 'center' },
+      numFmt: '0.00%'
+    };
+
+    const textStyle = {
+      ...dataStyle,
+      alignment: { horizontal: 'left', vertical: 'center' }
+    };
+
+    const totalStyle = {
+      font: { bold: true, sz: 11, name: 'Arial' },
+      fill: { fgColor: { rgb: 'FFD9D9D9' } },
+      border: borderStyle,
+      alignment: { horizontal: 'right', vertical: 'center' }
+    };
+
+    // Función helper para obtener el índice de columna por nombre de header
+    const getColumnIndex = (headerName) => {
+      return headers.indexOf(headerName);
+    };
+
+    // Aplicar estilos a cada celda
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r; R <= range.e.r; R++) {
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        const cell = ws[cellAddress];
+        if (!cell) continue;
+
+        // Título (fila 0)
+        if (R === 0) {
+          cell.s = titleStyle;
+        }
+        // Información del cliente (filas 1-3)
+        else if (R >= 1 && R <= 3) {
+          cell.s = { font: { sz: 10, name: 'Arial' }, alignment: { horizontal: 'left', vertical: 'center' } };
+        }
+        // Headers (fila 5)
+        else if (R === 5) {
+          cell.s = headerStyle;
+        }
+        // Datos de productos
+        else if (R >= 6 && R < 6 + productData.length) {
+          const rowIndex = R - 6;
+          const isEvenRow = rowIndex % 2 === 0;
+
+          // Fondo alternado para filas pares
+          const baseStyle = isEvenRow ? { ...dataStyle, fill: { fgColor: { rgb: 'FFF2F2F2' } } } : dataStyle;
+
+          const headerName = headers[C];
+          if (headerName === 'Código') {
+            cell.s = { ...baseStyle, alignment: { horizontal: 'center', vertical: 'center' } };
+          } else if (headerName === 'Nombre') {
+            cell.s = { ...baseStyle, alignment: { horizontal: 'left', vertical: 'center' } };
+          } else if (headerName === 'Cantidad') {
+            cell.s = { ...baseStyle, alignment: { horizontal: 'center', vertical: 'center' }, numFmt: '0' };
+          } else if (['Precio Lista', 'Precio Unitario', 'Subtotal'].includes(headerName)) {
+            cell.s = { ...numberStyle, fill: baseStyle.fill };
+          } else if (headerName === 'Total c/IGV') {
+            cell.s = { ...numberStyle, fill: baseStyle.fill, font: { ...numberStyle.font, bold: true } };
+          } else if (headerName.includes('Desc.')) {
+            // Todos los descuentos usan formato de porcentaje
+            cell.s = { ...numberStyle, fill: baseStyle.fill, numFmt: '0.00%' };
+          } else {
+            cell.s = baseStyle;
+          }
+        }
+        // Fila de totales
+        else if (R === 6 + productData.length + 1) {
+          const headerName = headers[C];
+          if (headerName === 'Código' || C === 0) { // "TOTALES"
+            cell.s = { ...totalStyle, alignment: { horizontal: 'left', vertical: 'center' }, font: { ...totalStyle.font, bold: true } };
+          } else if (['Subtotal', 'Total c/IGV'].includes(headerName)) {
+            cell.s = { ...totalStyle, font: { ...totalStyle.font, bold: true, sz: 12 } };
+          } else {
+            cell.s = totalStyle;
+          }
+        }
+      }
     }
 
     const safeSheetName = 'Cotizacion';
@@ -421,11 +626,10 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
               </label>
               <input
                 type="text"
-                className={`w-full border-2 rounded-lg px-3 py-2 focus:ring-2 transition-colors ${
-                  !isRUCValid && clientData.ruc
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                }`}
+                className={`w-full border-2 rounded-lg px-3 py-2 focus:ring-2 transition-colors ${!isRUCValid && clientData.ruc
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                 placeholder="Ingrese RUC (11 dígitos) o DNI (8 dígitos)"
                 value={clientData.ruc}
                 onChange={(e) => updateClientData('ruc', e.target.value)}
@@ -451,11 +655,10 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
               </label>
               <input
                 type="text"
-                className={`w-full border-2 rounded-lg px-3 py-2 focus:ring-2 transition-colors ${
-                  !isOCValid && clientData.oc
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                }`}
+                className={`w-full border-2 rounded-lg px-3 py-2 focus:ring-2 transition-colors ${!isOCValid && clientData.oc
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                 placeholder="Ingrese número de orden de compra"
                 value={clientData.oc}
                 onChange={(e) => updateClientData('oc', e.target.value)}
@@ -580,11 +783,10 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                         </div>
                       </td>
                       <td className="px-4 py-2 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          (product.stock || 0) > 20 ? 'bg-green-100 text-green-800' :
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${(product.stock || 0) > 20 ? 'bg-green-100 text-green-800' :
                           (product.stock || 0) > 10 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
+                            'bg-red-100 text-red-800'
+                          }`}>
                           {product.stock || 0}
                         </span>
                       </td>

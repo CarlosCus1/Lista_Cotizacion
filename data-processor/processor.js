@@ -143,6 +143,12 @@ try {
     fs.copyFileSync('./outputs/descuentos-fijos.json', path.join(publicDir, 'descuentos-fijos.json'));
     fs.copyFileSync('./outputs/sin-descuentos.json', path.join(publicDir, 'sin-descuentos.json'));
     console.log('📋 JSONs copiados a public/');
+
+    // Escribir la fecha y hora de la última actualización
+    const now = new Date();
+    const updateTimestamp = now.toLocaleString('es-PE', { timeZone: 'America/Lima' });
+    fs.writeFileSync(path.join(publicDir, 'last-update.txt'), updateTimestamp);
+    console.log(`⏰ Fecha de actualización guardada: ${updateTimestamp}`);
   }
 
   console.log('🎉 Procesamiento completado exitosamente!');

@@ -1,13 +1,40 @@
 {
   "name": "data-processor",
-  "version": "1.0.0",
-  "description": "Procesador de datos para app de cotización",
+  "version": "2.0.0",
+  "description": "Procesador automatizado de datos para app de cotización con sistema de actualización automática",
   "main": "processor.js",
   "scripts": {
     "process": "node processor.js",
-    "dev": "node processor.js"
+    "dev": "node processor.js",
+    "update": "powershell -ExecutionPolicy Bypass -File update-and-deploy.ps1",
+    "update:auto": "powershell -ExecutionPolicy Bypass -File update-and-deploy.ps1 -Auto",
+    "update:force": "powershell -ExecutionPolicy Bypass -File update-and-deploy.ps1 -Force",
+    "update:skip-deploy": "powershell -ExecutionPolicy Bypass -File update-and-deploy.ps1 -SkipDeploy",
+    "backup": "powershell -ExecutionPolicy Bypass -Command \"& { . update-and-deploy.ps1; Backup-Files }\"",
+    "schedule:create": "powershell -ExecutionPolicy Bypass -File create-scheduled-task.ps1",
+    "schedule:remove": "schtasks /delete /tn \"CotizacionDataUpdate\" /f 2>nul",
+    "logs:clean": "powershell -ExecutionPolicy Bypass -Command \"Get-ChildItem ../logs/*.log | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } | Remove-Item -Force\"",
+    "monitor": "powershell -ExecutionPolicy Bypass -File monitor-updates.ps1"
   },
   "dependencies": {
     "xlsx": "^0.18.5"
-  }
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "keywords": [
+    "data-processor",
+    "automation",
+    "json",
+    "excel",
+    "github-pages",
+    "ci-cd"
+  ],
+  "author": "Sistema Automatizado",
+  "license": "MIT"
 }
