@@ -14,7 +14,6 @@ import Tooltip from './components/Tooltip.jsx';
 // Lazy loading para DataTable
 const LazyDataTable = React.lazy(() => import('./components/DataTable.jsx'));
 
-
 // Carga diferida del componente Cotizacion para evitar advertencia de ESLint
 const LazyCotizacion = (props) => {
   const [CotizacionComponent, setCotizacionComponent] = useState(null);
@@ -34,9 +33,37 @@ const LazyCotizacion = (props) => {
         </div>
       </div>
     );
+  }
+
+  return <CotizacionComponent {...props} />;
+};
+
+export default function App() {
+  // Estado para datos de productos y carga
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState('');
+
+  useEffect(() => {
+    fetch('/last-update.txt')
+      .then(response => response.text())
+      .then(text => setLastUpdate(text.trim()));
+  }, []);
+
+  // Estado para la lista negra de productos sin descuentos
+  const [noDiscountList, setNoDiscountList] = useState(new Set());
+
+  // Estado para filtros y ordenación
+  const [selectedLine, setSelectedLine] = useState('TODAS');
+  const [search, setSearch] = useState('');
+  const [descOcultos, setDescOcultos] = useState([0, 0, 0, 0]);
+  const [descManualCount, setDescManualCount] = useState(1);
+
+  // Estado para categorías principales activas
+  const [categoriasActivas, setCategoriasActivas] = useState({
     vinifan: true,
-      viniball: false,
-        representadas: false
+    viniball: false,
+    representadas: false
   });
 
   const [sortKey, setSortKey] = useState('codigo');
@@ -65,7 +92,6 @@ const LazyCotizacion = (props) => {
   }, [categoriasActivas]);
 
   // Los descuentos se guardan automáticamente en localStorage
-
 
   // Guardar automáticamente los filtros de búsqueda cuando cambian
   useEffect(() => {
@@ -183,8 +209,6 @@ const LazyCotizacion = (props) => {
     }
   }
 
-
-
   // Auto-guardar configuración de columnas manuales
   useEffect(() => {
     localStorage.setItem('idb_settings_manualColumns', JSON.stringify(descManualCount));
@@ -202,9 +226,6 @@ const LazyCotizacion = (props) => {
   useEffect(() => {
     localStorage.setItem('idb_settings_clientDiscounts', JSON.stringify(descOcultos));
   }, [descOcultos]);
-
-
-
 
   /**
    * Carga los datos del catálogo desde localStorage o archivo JSON
@@ -258,9 +279,6 @@ const LazyCotizacion = (props) => {
     saveToDB('catalog', 'data', initialData);
     setLoading(false);
   }
-
-
-
 
   /**
    * Actualiza un campo específico para una fila de producto
@@ -318,7 +336,6 @@ const LazyCotizacion = (props) => {
       return next;
     });
   }
-
 
   /**
    * Inicializa la base de datos IndexedDB
@@ -414,9 +431,6 @@ const LazyCotizacion = (props) => {
       console.error('Error cargando filtros de búsqueda:', error);
     }
   }
-
-
-
 
   /**
    * Exporta lista de precios con descuentos aplicados para compartir con clientes
@@ -1208,199 +1222,121 @@ const LazyCotizacion = (props) => {
                 title="Exportar hoja de pedido con stock disponible"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </button>
-              <span className="text-md font-bold text-gray-700 min-w-[2rem] text-center">{descManualCount}</span>
-              <button
-                onClick={() => setDescManualCount(Math.min(3, descManualCount + 1))}
-                disabled={descManualCount >= 3}
-                className="w-7 h-7 bg-success-500 hover:bg-success-600 text-white rounded-full text-md font-bold flex items-center justify-center transition-colors disabled:bg-gray-300"
-                title="Agregar columna manual"
-              >
-                +
+                <span>Hoja de Pedido</span>
               </button>
             </div>
           </div>
         </div>
+      </header>
 
-        {/* Sección de Categorías Principales */}
-        <div className="lg:col-span-2 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-md font-semibold text-gray-800">Categorías Principales</h3>
-            <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded font-medium">
-              {Object.values(categoriasActivas).filter(Boolean).length}/3 activas
-            </span>
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+          <div className="relative">
+            {processedRows.length === 0 && !loading ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                <svg className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-lg font-medium">No se encontraron productos.</p>
+                <p className="text-sm">Intenta ajustar tus filtros o búsqueda.</p>
+              </div>
+            ) : (
+              <React.Suspense fallback={
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Cargando tabla de datos...</p>
+                  </div>
+                </div>
+              }>
+                <LazyDataTable
+                  data={paginatedRows}
+                  formatMoney={formatMoney}
+                  descOcultos={descOcultos}
+                  descManualCount={descManualCount}
+                  setDescManualCount={setDescManualCount}
+                  updateRow={updateRow}
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  handleSort={handleSort}
+                />
+              </React.Suspense>
+            )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
-            <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
-              <input
-                type="checkbox"
-                checked={categoriasActivas.vinifan}
-                onChange={(e) => setCategoriasActivas(prev => ({ ...prev, vinifan: e.target.checked }))}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-gray-800">🎨 Vinifan</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
-              <input
-                type="checkbox"
-                checked={categoriasActivas.viniball}
-                onChange={(e) => setCategoriasActivas(prev => ({ ...prev, viniball: e.target.checked }))}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-gray-800">🏀 Viniball</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50">
-              <input
-                type="checkbox"
-                checked={categoriasActivas.representadas}
-                onChange={(e) => setCategoriasActivas(prev => ({ ...prev, representadas: e.target.checked }))}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-gray-800">🏢 Representadas</span>
-            </label>
-          </div>
-        </div>
-    </div>
 
-{/* Columna Derecha: Acciones */ }
-  <div className="flex flex-col gap-3 justify-center">
-    <button
-      onClick={() => setCurrentView('quotation')}
-      className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
-      title="Crear una nueva cotización"
-    >
-      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd"></path></svg>
-      <span>Crear Cotización</span>
-    </button>
-    <button
-      onClick={downloadPriceList}
-      className="w-full bg-gradient-to-r from-corporate-navy to-blue-900 hover:from-blue-900 hover:to-blue-800 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
-      title="Exportar lista de precios con descuentos aplicados"
-    >
-      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-      <span>Lista de Precios</span>
-    </button>
-    <button
-      onClick={downloadOrderSheet}
-      className="w-full bg-gradient-to-r from-success-500 to-success-600 hover:from-success-600 hover:to-success-700 text-white px-4 py-3 rounded-lg font-bold text-base flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95"
-      title="Exportar hoja de pedido con stock disponible"
-    >
-      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-      <span>Hoja de Pedido</span>
-    </button>
-  </div>
-        </div >
-      </div >
-    </header >
+          {/* Controles de Paginación */}
+          {totalPages > 1 && (
+            <div className="bg-white border-t border-gray-200 px-3 sm:px-4 py-3">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-700">Mostrar:</label>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  >
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span className="text-sm text-gray-600">por página</span>
+                </div>
 
-  <main className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-      <div className="relative">
-        {processedRows.length === 0 && !loading ? (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-            <svg className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-lg font-medium">No se encontraron productos.</p>
-            <p className="text-sm">Intenta ajustar tus filtros o búsqueda.</p>
-          </div>
-        ) : (
-          <React.Suspense fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Cargando tabla de datos...</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ‹ Anterior
+                  </button>
+
+                  <span className="text-sm text-gray-700">
+                    Página {currentPage} de {totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguiente ›
+                  </button>
+                </div>
               </div>
             </div>
-          }>
-            <LazyDataTable
-              data={paginatedRows}
-              formatMoney={formatMoney}
-              descOcultos={descOcultos}
-              descManualCount={descManualCount}
-              setDescManualCount={setDescManualCount}
-              updateRow={updateRow}
-              sortKey={sortKey}
-              sortDir={sortDir}
-              handleSort={handleSort}
-            />
-          </React.Suspense>
-        )}
-      </div>
+          )}
 
-      {/* Controles de Paginación */}
-      {totalPages > 1 && (
-        <div className="bg-white border-t border-gray-200 px-3 sm:px-4 py-3">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-700">Mostrar:</label>
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
-              >
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-              <span className="text-sm text-gray-600">por página</span>
+          <div className="flex flex-col sm:flex-row items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-gray-50 border-t border-gray-200 text-sm">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-gray-600 mb-3 sm:mb-0">
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-xs sm:text-sm">Cargando...</span>
+                </div>
+              ) : (
+                <span className="font-medium text-xs sm:text-sm">{totalItems} registros</span>
+              )}
+              {selectedLine !== 'TODAS' && (
+                <span className="text-gray-500 text-xs sm:text-sm">• Línea: <span className="font-medium text-gray-700">{selectedLine}</span></span>
+              )}
+              {search && (
+                <span className="text-gray-500 text-xs sm:text-sm">• Búsqueda: <span className="font-medium text-gray-700">"{search}"</span></span>
+              )}
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                ‹ Anterior
-              </button>
-
-              <span className="text-sm text-gray-700">
-                Página {currentPage} de {totalPages}
-              </span>
-
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Siguiente ›
-              </button>
-            </div>
+            {lastUpdate && (
+              <div className="text-xs text-gray-500">
+                Última actualización: {lastUpdate}
+              </div>
+            )}
           </div>
         </div>
-      )}
-
-      <div className="flex flex-col sm:flex-row items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-gray-50 border-t border-gray-200 text-sm">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-gray-600 mb-3 sm:mb-0">
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span className="text-xs sm:text-sm">Cargando...</span>
-            </div>
-          ) : (
-            <span className="font-medium text-xs sm:text-sm">{totalItems} registros</span>
-          )}
-          {selectedLine !== 'TODAS' && (
-            <span className="text-gray-500 text-xs sm:text-sm">• Línea: <span className="font-medium text-gray-700">{selectedLine}</span></span>
-          )}
-          {search && (
-            <span className="text-gray-500 text-xs sm:text-sm">• Búsqueda: <span className="font-medium text-gray-700">"{search}"</span></span>
-          )}
-        </div>
-        {lastUpdate && (
-          <div className="text-xs text-gray-500">
-            Última actualización: {lastUpdate}
-          </div>
-        )}
-      </div>
+      </main>
     </div>
-  </main>
-  </div >
-);
+  );
 }
