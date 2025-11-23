@@ -1,54 +1,185 @@
 # 🚀 Automatización de Actualización de Datos
 
-## Archivo Batch Principal
+## 🎯 Opciones de Automatización Disponibles
 
-### `update-and-deploy.bat`
+### 1. 🚀 **GitHub Actions (MÁS RECOMENDADO)**
+Sistema completamente automatizado en la nube con alta confiabilidad.
 
-Este archivo batch es el punto de entrada principal para iniciar el proceso de automatización completo.
+#### Archivo: `.github/workflows/update-stock-and-deploy.yml`
+
+**Ventajas:**
+- ✅ **Totalmente automático** - Se ejecuta sin intervención humana
+- ✅ **Programado diariamente** - Actualización automática cada día
+- ✅ **Manejo robusto de errores** - Reintentos automáticos
+- ✅ **Logs detallados** - Seguimiento completo en GitHub
+- ✅ **No depende de máquina local** - Siempre disponible
+- ✅ **Notificaciones** - Alertas por email/Slack opcionales
+
+**Triggers disponibles:**
+- **Manual**: Desde interfaz de GitHub Actions
+- **Programado**: Todos los días a las 6 AM UTC (1 AM Lima)
+- **Automático**: En push a rama main
+
+**Para ejecutar manualmente:**
+1. Ir a GitHub → Actions → "Update Stock & Deploy"
+2. Click "Run workflow"
+3. Seleccionar opciones si es necesario
+
+---
+
+### 2. 🖥️ **Script Mejorado Local (ALTERNATIVA ROBUSTA)**
+
+#### Archivo: `update-and-deploy-improved.bat`
+
+**Ventajas:**
+- ✅ **Manejo avanzado de errores** - Verificación de cada paso
+- ✅ **Backups automáticos** - Seguridad de datos
+- ✅ **Logs detallados** - Seguimiento completo
+- ✅ **Verificación de prerrequisitos** - Antes de ejecutar
+- ✅ **Modo interactivo** - Control del usuario
 
 #### Uso Básico
 
 ```batch
-# Ejecutar automatización completa
-update-and-deploy.bat
-
-# Ejecutar en modo automático (sin pausas)
-update-and-deploy.bat -Auto
-
-# Solo procesar datos, omitir despliegue
-update-and-deploy.bat -SkipDeploy
-
-# Forzar actualización aunque no haya cambios
-update-and-deploy.bat -Force
+# Ejecutar automatización completa mejorada
+update-and-deploy-improved.bat
 ```
 
-#### Parámetros Disponibles
+#### Lo que hace el script mejorado
 
-- **Sin parámetros**: Modo interactivo con pausas
-- **`-Auto`**: Modo automático sin pausas interactivas
-- **`-SkipDeploy`**: Omite el despliegue a GitHub Pages
-- **`-Force`**: Fuerza la actualización incluso si no hay cambios
+1. ✅ **Verificación exhaustiva de prerrequisitos**
+2. ✅ **Creación automática de backups**
+3. ✅ **Procesamiento seguro de datos**
+4. ✅ **Validación de cambios**
+5. ✅ **Commit inteligente** (solo si hay cambios)
+6. ✅ **Push seguro con manejo de errores**
+7. ✅ **Build y deploy completo**
 
-#### Lo que hace el script
+---
 
-1. ✅ **Verifica prerrequisitos** (Node.js, npm, Git)
-2. ✅ **Crea backups** de archivos JSON existentes
-3. ✅ **Procesa datos** desde Excel usando Node.js
-4. ✅ **Copia archivos** JSON a la carpeta `public`
-5. ✅ **Verifica cambios** en archivos
-6. ✅ **Crea commit** automático si hay cambios
-7. ✅ **Sube cambios** a rama main de Git
-8. ✅ **Despliega** a GitHub Pages (opcional)
+### 3. 📜 **Script PowerShell Original**
 
-#### Archivos de Log
+#### Archivo: `data-processor/update-and-deploy.ps1`
 
-Los logs detallados se guardan en la carpeta `logs/` con nombres como:
-- `update_20251122_191700.log`
+**Ventajas:**
+- ✅ **Funcionalidad completa** - Todos los features
+- ✅ **Parámetros avanzados** - Control granular
+- ✅ **Scripting profesional** - Manejo avanzado
 
-#### Archivos de Backup
+#### Uso con Parámetros
 
-Los backups se guardan en `public/backup/` con nombres como:
-- `catalogo-base_20251122_191700.json`
+```powershell
+# Modo automático completo
+.\data-processor\update-and-deploy.ps1 -Auto
+
+# Solo procesar, sin deploy
+.\data-processor\update-and-deploy.ps1 -SkipDeploy
+
+# Forzar actualización
+.\data-processor\update-and-deploy.ps1 -Force
+```
+
+---
+
+### 4. 📜 **Script Batch Simple**
+
+#### Archivo: `update-and-deploy.bat`
+
+**Ventajas:**
+- ✅ **Simple y directo** - Un solo clic
+- ✅ **Rápido** - Mínima configuración
+- ✅ **Compatible** - Funciona en cualquier Windows
+
+#### Uso Básico
+
+```batch
+# Simplemente ejecutar
+update-and-deploy.bat
+```
+
+---
+
+## 📊 Comparación de Métodos
+
+| Característica | GitHub Actions | Script Mejorado | PowerShell | Batch Simple |
+|---|---|---|---|---|
+| **Confiabilidad** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
+| **Automatización** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
+| **Manejo de Errores** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
+| **Logs** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
+| **Backups** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
+| **Facilidad de Uso** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Dependencia Local** | ❌ | ✅ | ✅ | ✅ |
+
+---
+
+## 🔧 Configuración de Tareas Programadas (Windows)
+
+Para automatización local programada, crear tarea programada:
+
+1. **Buscar**: "Programador de tareas"
+2. **Crear tarea**: "Actualización Stock Cotización"
+3. **Trigger**: Diario a las 6:00 AM
+4. **Acción**: Ejecutar `update-and-deploy-improved.bat`
+5. **Directorio**: Ruta completa del proyecto
+
+---
+
+## 📋 Requisitos del Sistema
+
+### Para Todos los Métodos
+- **Node.js** 18+ instalado
+- **npm** instalado
+- **Git** configurado
+- **PowerShell** (para scripts avanzados)
+
+### Para GitHub Actions
+- Repositorio en GitHub
+- GitHub Actions habilitado
+- Permisos de escritura en repo
+
+### Para Scripts Locales
+- Windows 10/11
+- Acceso a archivos de stock
+- Conexión a internet
+
+---
+
+## 🚨 Solución de Problemas
+
+### Error: "Node.js no está disponible"
+```bash
+# Instalar Node.js
+# Descargar desde: https://nodejs.org/
+```
+
+### Error: "Archivo de stock no encontrado"
+```bash
+# Verificar ruta en processor.js
+# STOCK_COMPLETO_PATH = 'C:\Users\ccusi\Documents\Proyect_Coder\gestion_de_stock\procesamiento\data_stock_completo.xlsx'
+```
+
+### Error en GitHub Actions
+- Revisar logs en Actions tab
+- Verificar permisos del repo
+- Confirmar que archivos de configuración existen
+
+### Error de Commit/Push
+```bash
+# Verificar credenciales Git
+git config --global user.name "Tu Nombre"
+git config --global user.email "tu@email.com"
+```
+
+---
+
+## 📈 Recomendación Final
+
+**Para máxima confiabilidad**: Usar **GitHub Actions** con el workflow programado.
+
+**Para control local**: Usar **Script Mejorado** (`update-and-deploy-improved.bat`).
+
+**Para simplicidad**: Usar **Batch Simple** (`update-and-deploy.bat`).
 
 ## Scripts de PowerShell
 
