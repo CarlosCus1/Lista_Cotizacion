@@ -1,4 +1,4 @@
-import{j as e,T as s,c as b}from"./index-b29824af.js";import"./vendor-b1791c80.js";import"./utils-6c4e335f.js";function v({data:u,formatMoney:p,descOcultos:m,descManualCount:d,setDescManualCount:y,updateRow:x,sortKey:o,sortDir:i,handleSort:l}){const h=`
+import{j as e,T as s,c as b}from"./index-d482dd46.js";import"./vendor-b1791c80.js";import"./utils-6c4e335f.js";function v({data:u,formatMoney:p,descOcultos:m,descManualCount:d,setDescManualCount:y,updateRow:x,sortKey:o,sortDir:i,handleSort:l}){const h=`
     4%            /* orden */
     8%            /* código */
     32%           /* nombre - espacio prioritario */
