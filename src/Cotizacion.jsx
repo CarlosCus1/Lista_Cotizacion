@@ -106,8 +106,18 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
       );
     }
 
+    // Agregar información de selección y descuentos manuales a cada producto
+    const catalogWithSelection = filtered.map(product => {
+      const selectedItem = quotedItems.find(item => item.product.idx === product.idx);
+      return {
+        ...product,
+        isSelected: !!selectedItem,
+        selectedItem: selectedItem || null,
+      };
+    });
+
     // Ordenar
-    const sorted = [...filtered].sort((a, b) => {
+    const sorted = [...catalogWithSelection].sort((a, b) => {
       let res = 0;
       if (selectionSortKey === 'orden') {
         res = (a.orden || 999999) - (b.orden || 999999);
@@ -126,7 +136,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     });
 
     return sorted;
-  }, [catalogData, selectedLine, debouncedSearch, selectionSortKey, selectionSortDir]);
+  }, [catalogData, selectedLine, debouncedSearch, selectionSortKey, selectionSortDir, quotedItems]);
 
   // Paginación para selección
   const selectionTotalItems = filteredCatalog.length;
@@ -725,6 +735,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                           setQuotedItems([]);
                         }
                       }}
+                      checked={paginatedCatalog.length > 0 && paginatedCatalog.every(p => p.isSelected)}
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                     />
                   </th>
@@ -763,8 +774,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
               </thead>
               <tbody>
                 {paginatedCatalog.map((product) => {
-                  const selectedItem = quotationProducts.find(p => p.idx === product.idx);
-                  const isSelected = !!selectedItem;
+                  const { isSelected, selectedItem } = product;
 
                   return (
                     <tr key={product.idx} className={`border-b hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
