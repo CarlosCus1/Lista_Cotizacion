@@ -331,7 +331,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
 
     // Datos base de productos
     const baseProductData = quotationProducts.map((p, index) => [
-      (currentPage - 1) * pageSize + index + 1, // índice
+      p.orden || index + 1,           // índice original
       p.codigo,                       // codigo
       p.nombre,                       // nombre
       p.quantity,                     // cantidad
@@ -803,11 +803,10 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
               <tbody>
                 {paginatedCatalog.map((product, index) => {
                   const { isSelected, selectedItem } = product;
-                  const rowIndex = (selectionCurrentPage - 1) * selectionPageSize + index + 1;
 
                   return (
                     <tr key={product.idx} className={`border-b hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
-                      <td className="px-4 py-2 text-center font-mono text-sm text-gray-500">{rowIndex}</td>
+                      <td className="px-4 py-2 text-center font-mono text-sm text-gray-500">{product.orden || index + 1}</td>
                       <td className="px-4 py-2 text-center">
                         <input
                           type="checkbox"
@@ -961,10 +960,9 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                 </thead>
                 <tbody>
                   {paginatedProducts.map((p, index) => {
-                    const rowIndex = (currentPage - 1) * pageSize + index + 1;
                     return (
                       <tr key={p.idx} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-2 text-center font-mono text-sm text-gray-500">{rowIndex}</td>
+                        <td className="px-4 py-2 text-center font-mono text-sm text-gray-500">{p.orden || index + 1}</td>
                         <td className="px-4 py-2 font-mono font-medium text-gray-900">{p.codigo}</td>
                       <td className="px-4 py-2">
                         <div className="font-medium text-sm leading-tight break-words line-clamp-2 hover:line-clamp-none hover:whitespace-normal transition-all duration-200 cursor-help" title={p.nombre}>
