@@ -140,6 +140,8 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         res = (a.selectedItem?.manualDiscounts[0] || 0) - (b.selectedItem?.manualDiscounts[0] || 0);
       } else if (selectionSortKey === 'descManual2') {
         res = (a.selectedItem?.manualDiscounts[1] || 0) - (b.selectedItem?.manualDiscounts[1] || 0);
+      } else if (selectionSortKey === 'descManual3') {
+        res = (a.selectedItem?.manualDiscounts[2] || 0) - (b.selectedItem?.manualDiscounts[2] || 0);
       }
       return selectionSortDir === 'asc' ? res : -res;
     });
@@ -161,6 +163,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         ...item.product,
         descManual1: item.manualDiscounts[0] || 0,
         descManual2: item.manualDiscounts[1] || 0,
+        descManual3: item.manualDiscounts[2] || 0,
       };
 
       const {
@@ -242,7 +245,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
       if (isSelected) {
         return prev.filter(item => item.product.idx !== product.idx);
       } else {
-        return [...prev, { product, quantity: 1, manualDiscounts: [0, 0] }];
+        return [...prev, { product, quantity: 1, manualDiscounts: [0, 0, 0] }];
       }
     });
   };
@@ -761,7 +764,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                       onChange={(e) => {
                         if (e.target.checked) {
                           // Seleccionar todos los productos visibles
-                          const allProducts = paginatedCatalog.map(p => ({ product: p, quantity: 1, manualDiscounts: [0, 0] }));
+                          const allProducts = paginatedCatalog.map(p => ({ product: p, quantity: 1, manualDiscounts: [0, 0, 0] }));
                           setQuotedItems(allProducts);
                         } else {
                           // Deseleccionar todos
@@ -797,6 +800,9 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                       {selectionSortKey === 'precio_lista' && <span>{selectionSortDir === 'asc' ? '▲' : '▼'}</span>}
                     </button>
                   </th>
+                  <th scope="col" className="px-4 py-3 text-center">Desc. Manual 1 (%)</th>
+                  <th scope="col" className="px-4 py-3 text-center">Desc. Manual 2 (%)</th>
+                  <th scope="col" className="px-4 py-3 text-center">Desc. Manual 3 (%)</th>
                   <th scope="col" className="px-4 py-3 text-right">
                     <button onClick={() => handleSelectionSort('precio_igv')} className="hover:text-blue-600 flex items-center gap-1">
                       Precio c/IGV
@@ -842,6 +848,54 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                             className="w-20 border border-gray-300 rounded-md px-2 py-1 text-center font-mono"
                             value={Math.round(selectedItem.quantity)}
                             onChange={(e) => updateItem(product.idx, 'quantity', e.target.value)}
+                          />
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {isSelected ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            className="w-16 border border-gray-300 rounded-md px-1 py-1 text-center font-mono text-sm"
+                            value={selectedItem.manualDiscounts[0] || 0}
+                            onChange={(e) => updateItem(product.idx, 'manualDiscount0', e.target.value)}
+                            onBlur={(e) => updateItem(product.idx, 'manualDiscount0', e.target.value)}
+                          />
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {isSelected ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            className="w-16 border border-gray-300 rounded-md px-1 py-1 text-center font-mono text-sm"
+                            value={selectedItem.manualDiscounts[1] || 0}
+                            onChange={(e) => updateItem(product.idx, 'manualDiscount1', e.target.value)}
+                            onBlur={(e) => updateItem(product.idx, 'manualDiscount1', e.target.value)}
+                          />
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {isSelected ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            className="w-16 border border-gray-300 rounded-md px-1 py-1 text-center font-mono text-sm"
+                            value={selectedItem.manualDiscounts[2] || 0}
+                            onChange={(e) => updateItem(product.idx, 'manualDiscount2', e.target.value)}
+                            onBlur={(e) => updateItem(product.idx, 'manualDiscount2', e.target.value)}
                           />
                         ) : (
                           <span className="text-gray-400">-</span>
