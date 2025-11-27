@@ -123,6 +123,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
           ...product,
           descManual1: selectedItem.manualDiscounts[0] || 0,
           descManual2: selectedItem.manualDiscounts[1] || 0,
+          descManual3: selectedItem.manualDiscounts[2] || 0,
         };
       }
       const { neto: unitPrice } = calculatePrice(productForPriceCalc, descOcultos);
