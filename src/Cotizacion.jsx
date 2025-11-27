@@ -245,7 +245,15 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
       if (isSelected) {
         return prev.filter(item => item.product.idx !== product.idx);
       } else {
-        return [...prev, { product, quantity: 1, manualDiscounts: [0, 0, 0] }];
+        // Copiar descuentos manuales del catálogo si existen
+        const catalogProduct = processedCatalogData.find(p => p.idx === product.idx);
+        const manualDiscounts = catalogProduct ? [
+          catalogProduct.descManual1 || 0,
+          catalogProduct.descManual2 || 0,
+          catalogProduct.descManual3 || 0
+        ] : [0, 0, 0];
+
+        return [...prev, { product, quantity: 1, manualDiscounts }];
       }
     });
   };
