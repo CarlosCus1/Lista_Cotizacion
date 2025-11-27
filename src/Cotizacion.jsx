@@ -114,10 +114,15 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     // Agregar información de selección y descuentos manuales a cada producto
     const catalogWithSelection = filtered.map(product => {
       const selectedItem = quotedItems.find(item => item.product.idx === product.idx);
+
+      // Calcular precio unitario consistente (con descuentos aplicados)
+      const { neto: unitPrice } = calculatePrice(product, descOcultos);
+
       return {
         ...product,
         isSelected: !!selectedItem,
         selectedItem: selectedItem || null,
+        unitPrice, // Precio unitario consistente con descuentos aplicados
       };
     });
 
@@ -847,8 +852,8 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-2 text-right font-mono">{isSelected ? formatMoney(selectedItem.unitPrice) : formatMoney(product.precio_lista)}</td>
-                      <td className="px-4 py-2 text-right font-mono">{isSelected ? formatMoney(selectedItem.unitPrice * (1 + IGV)) : formatMoney(product.precio_lista * (1 + IGV))}</td>
+                      <td className="px-4 py-2 text-right font-mono">{formatMoney(product.unitPrice)}</td>
+                      <td className="px-4 py-2 text-right font-mono">{formatMoney(product.unitPrice * (1 + IGV))}</td>
                     </tr>
                   );
                 })}
