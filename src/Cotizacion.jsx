@@ -175,6 +175,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         ...item.product,
         descManual1: item.manualDiscounts[0] || 0,
         descManual2: item.manualDiscounts[1] || 0,
+        descManual3: item.manualDiscounts[2] || 0,
       };
 
       const {
