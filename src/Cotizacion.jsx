@@ -131,6 +131,10 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         res = a.precio_lista - b.precio_lista;
       } else if (selectionSortKey === 'precio_igv') {
         res = (a.precio_lista * (1 + IGV)) - (b.precio_lista * (1 + IGV));
+      } else if (selectionSortKey === 'descManual1') {
+        res = (a.selectedItem?.manualDiscounts[0] || 0) - (b.selectedItem?.manualDiscounts[0] || 0);
+      } else if (selectionSortKey === 'descManual2') {
+        res = (a.selectedItem?.manualDiscounts[1] || 0) - (b.selectedItem?.manualDiscounts[1] || 0);
       }
       return selectionSortDir === 'asc' ? res : -res;
     });
@@ -182,7 +186,9 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     // Ordenar productos
     products.sort((a, b) => {
       let res = 0;
-      if (sortKey === 'codigo') {
+      if (sortKey === 'orden') {
+        res = (a.orden || 999999) - (b.orden || 999999);
+      } else if (sortKey === 'codigo') {
         res = String(a.codigo).localeCompare(String(b.codigo), undefined, { numeric: true, sensitivity: 'base' });
       } else if (sortKey === 'nombre') {
         res = String(a.nombre).localeCompare(String(b.nombre), undefined, { sensitivity: 'base' });
@@ -316,6 +322,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
 
     // Headers base de productos
     const baseHeaders = [
+      '#',
       'Código',
       'Nombre',
       'Cantidad',
@@ -323,7 +330,8 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     ];
 
     // Datos base de productos
-    const baseProductData = quotationProducts.map(p => [
+    const baseProductData = quotationProducts.map((p, index) => [
+      (currentPage - 1) * pageSize + index + 1, // índice
       p.codigo,                       // codigo
       p.nombre,                       // nombre
       p.quantity,                     // cantidad
@@ -396,6 +404,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     const filteredHeaders = [];
     const filteredProductData = [];
     const baseColumnWidths = [
+      { wch: 6 },  // índice
       { wch: 12 }, // código
       { wch: 40 }, // nombre
       { wch: 10 }, // cantidad
@@ -411,8 +420,8 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     const filteredColumnWidths = [];
 
     baseHeaders.forEach((header, index) => {
-      // Siempre mantener Código, Nombre, Cantidad, Precio Unitario, Subtotal, Total c/IGV
-      const alwaysKeep = ['Código', 'Nombre', 'Cantidad', 'Precio Unitario', 'Subtotal', 'Total c/IGV'].includes(header);
+      // Siempre mantener Índice, Código, Nombre, Cantidad, Precio Unitario, Subtotal, Total c/IGV
+      const alwaysKeep = ['#', 'Código', 'Nombre', 'Cantidad', 'Precio Unitario', 'Subtotal', 'Total c/IGV'].includes(header);
 
       if (alwaysKeep) {
         columnsToKeep.push(index);
@@ -441,14 +450,25 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
 
     // Crear fila de totales ajustada a las columnas filtradas
     const totalRow = ['TOTALES'];
-    // Agregar celdas vacías para las columnas que no son totales
+    // Agregar celdas vacías para las columnas que no son totales (desde índice 1 hasta length-3)
     for (let i = 1; i < headers.length - 2; i++) {
       totalRow.push('');
     }
     // Agregar los totales al final
     totalRow.push(totals.totalSinIgv, totals.totalConIgv);
 
+    // Crear filas de guía de fórmulas
+    const formulaGuideRows = [
+      [], // fila vacía
+      ['💡 GUÍAS DE FÓRMULAS (Alt+Shift+= para autosuma):'],
+      ['• Subtotal producto: =[Cantidad] * [Precio Unitario]'],
+      ['• Total con IGV: =[Subtotal] * 1.18'],
+      ['• Suma totales: Selecciona celdas y presiona Alt+Shift+='],
+      [], // fila vacía
+    ];
+
     const totalsData = [
+      ...formulaGuideRows,
       [], // fila vacía
       totalRow,
     ];
@@ -553,7 +573,9 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
           const baseStyle = isEvenRow ? { ...dataStyle, fill: { fgColor: { rgb: 'FFF2F2F2' } } } : dataStyle;
 
           const headerName = headers[C];
-          if (headerName === 'Código') {
+          if (headerName === '#') {
+            cell.s = { ...baseStyle, alignment: { horizontal: 'center', vertical: 'center' } };
+          } else if (headerName === 'Código') {
             cell.s = { ...baseStyle, alignment: { horizontal: 'center', vertical: 'center' } };
           } else if (headerName === 'Nombre') {
             cell.s = { ...baseStyle, alignment: { horizontal: 'left', vertical: 'center' } };
@@ -722,7 +744,12 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
             <table className="w-full text-sm text-left text-gray-500">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-4 py-3 text-center">#</th>
+                  <th scope="col" className="px-4 py-3 text-center">
+                    <button onClick={() => handleSelectionSort('orden')} className="hover:text-blue-600 flex items-center gap-1">
+                      #
+                      {selectionSortKey === 'orden' && <span>{selectionSortDir === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
                   <th scope="col" className="px-4 py-3 text-center">
                     <input
                       type="checkbox"
@@ -879,7 +906,12 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
               <table className="w-full text-sm text-left text-gray-500">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-4 py-3 text-center">#</th>
+                    <th scope="col" className="px-4 py-3 text-center">
+                      <button onClick={() => handleSort('orden')} className="hover:text-blue-600 flex items-center gap-1">
+                        #
+                        {sortKey === 'orden' && <span>{sortDir === 'asc' ? '▲' : '▼'}</span>}
+                      </button>
+                    </th>
                     <th scope="col" className="px-4 py-3">
                       <button onClick={() => handleSort('codigo')} className="hover:text-blue-600 flex items-center gap-1">
                         Código
