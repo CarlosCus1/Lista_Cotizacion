@@ -7,6 +7,14 @@ import { formatMoney, formatTimeAgo, toFixed2 } from './utils/formatters.js';
 const IGV = 0.18;
 
 export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] }) {
+  // Procesar catálogo para agregar campo orden (número original del catálogo)
+  const processedCatalogData = useMemo(() => {
+    return catalogData.map((product, index) => ({
+      ...product,
+      orden: index + 1
+    }));
+  }, [catalogData]);
+
   // Estado del cliente
   const [clientData, setClientData] = useState({
     ruc: '',
@@ -91,7 +99,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
   const debouncedSearch = useDebounce(search, 300);
 
   const filteredCatalog = useMemo(() => {
-    let filtered = catalogData;
+    let filtered = processedCatalogData;
 
     if (selectedLine !== 'TODAS') {
       filtered = filtered.filter((r) => r.linea === selectedLine);
@@ -140,7 +148,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
     });
 
     return sorted;
-  }, [catalogData, selectedLine, debouncedSearch, selectionSortKey, selectionSortDir, quotedItems]);
+  }, [processedCatalogData, selectedLine, debouncedSearch, selectionSortKey, selectionSortDir, quotedItems]);
 
   // Paginación para selección
   const selectionTotalItems = filteredCatalog.length;
@@ -732,7 +740,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                   onChange={(e) => setSelectedLine(e.target.value)}
                 >
                   <option value="TODAS">Todas las líneas</option>
-                  {[...new Set(catalogData.map(p => p.linea).filter(Boolean))].sort().map(line => (
+                  {[...new Set(processedCatalogData.map(p => p.linea).filter(Boolean))].sort().map(line => (
                     <option key={line} value={line}>{line}</option>
                   ))}
                 </select>
