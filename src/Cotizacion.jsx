@@ -116,7 +116,16 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
       const selectedItem = quotedItems.find(item => item.product.idx === product.idx);
 
       // Calcular precio unitario consistente (con descuentos aplicados)
-      const { neto: unitPrice } = calculatePrice(product, descOcultos);
+      let productForPriceCalc = product;
+      if (selectedItem) {
+        // Si el producto ya tiene descuentos manuales, incluirlos en el cálculo
+        productForPriceCalc = {
+          ...product,
+          descManual1: selectedItem.manualDiscounts[0] || 0,
+          descManual2: selectedItem.manualDiscounts[1] || 0,
+        };
+      }
+      const { neto: unitPrice } = calculatePrice(productForPriceCalc, descOcultos);
 
       return {
         ...product,
