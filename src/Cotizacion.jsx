@@ -140,8 +140,6 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         res = (a.selectedItem?.manualDiscounts[0] || 0) - (b.selectedItem?.manualDiscounts[0] || 0);
       } else if (selectionSortKey === 'descManual2') {
         res = (a.selectedItem?.manualDiscounts[1] || 0) - (b.selectedItem?.manualDiscounts[1] || 0);
-      } else if (selectionSortKey === 'descManual3') {
-        res = (a.selectedItem?.manualDiscounts[2] || 0) - (b.selectedItem?.manualDiscounts[2] || 0);
       }
       return selectionSortDir === 'asc' ? res : -res;
     });
@@ -163,7 +161,6 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
         ...item.product,
         descManual1: item.manualDiscounts[0] || 0,
         descManual2: item.manualDiscounts[1] || 0,
-        descManual3: item.manualDiscounts[2] || 0,
       };
 
       const {
@@ -245,15 +242,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
       if (isSelected) {
         return prev.filter(item => item.product.idx !== product.idx);
       } else {
-        // Copiar descuentos manuales del catálogo si existen
-        const catalogProduct = processedCatalogData.find(p => p.idx === product.idx);
-        const manualDiscounts = catalogProduct ? [
-          catalogProduct.descManual1 || 0,
-          catalogProduct.descManual2 || 0,
-          catalogProduct.descManual3 || 0
-        ] : [0, 0, 0];
-
-        return [...prev, { product, quantity: 1, manualDiscounts }];
+        return [...prev, { product, quantity: 1, manualDiscounts: [0, 0] }];
       }
     });
   };
@@ -268,7 +257,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
           } else if (field.startsWith('manualDiscount')) {
             const index = parseInt(field.replace('manualDiscount', ''), 10);
             const newDiscounts = [...newItem.manualDiscounts];
-            newDiscounts[index] = Math.max(0, Math.min(100, parseFloat(value) || 0));
+            newDiscounts[index] = Math.max(0, parseFloat(value) || 0);
             newItem.manualDiscounts = newDiscounts;
           }
           return newItem;
@@ -772,7 +761,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                       onChange={(e) => {
                         if (e.target.checked) {
                           // Seleccionar todos los productos visibles
-                          const allProducts = paginatedCatalog.map(p => ({ product: p, quantity: 1, manualDiscounts: [0, 0, 0] }));
+                          const allProducts = paginatedCatalog.map(p => ({ product: p, quantity: 1, manualDiscounts: [0, 0] }));
                           setQuotedItems(allProducts);
                         } else {
                           // Deseleccionar todos
@@ -808,9 +797,6 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                       {selectionSortKey === 'precio_lista' && <span>{selectionSortDir === 'asc' ? '▲' : '▼'}</span>}
                     </button>
                   </th>
-                  <th scope="col" className="px-4 py-3 text-center">Desc. Manual 1 (%)</th>
-                  <th scope="col" className="px-4 py-3 text-center">Desc. Manual 2 (%)</th>
-                  <th scope="col" className="px-4 py-3 text-center">Desc. Manual 3 (%)</th>
                   <th scope="col" className="px-4 py-3 text-right">
                     <button onClick={() => handleSelectionSort('precio_igv')} className="hover:text-blue-600 flex items-center gap-1">
                       Precio c/IGV
@@ -856,54 +842,6 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                             className="w-20 border border-gray-300 rounded-md px-2 py-1 text-center font-mono"
                             value={Math.round(selectedItem.quantity)}
                             onChange={(e) => updateItem(product.idx, 'quantity', e.target.value)}
-                          />
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {isSelected ? (
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            className="w-16 border border-gray-300 rounded-md px-1 py-1 text-center font-mono text-sm"
-                            value={selectedItem.manualDiscounts[0] || 0}
-                            onChange={(e) => updateItem(product.idx, 'manualDiscount0', e.target.value)}
-                            onBlur={(e) => updateItem(product.idx, 'manualDiscount0', e.target.value)}
-                          />
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {isSelected ? (
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            className="w-16 border border-gray-300 rounded-md px-1 py-1 text-center font-mono text-sm"
-                            value={selectedItem.manualDiscounts[1] || 0}
-                            onChange={(e) => updateItem(product.idx, 'manualDiscount1', e.target.value)}
-                            onBlur={(e) => updateItem(product.idx, 'manualDiscount1', e.target.value)}
-                          />
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {isSelected ? (
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            className="w-16 border border-gray-300 rounded-md px-1 py-1 text-center font-mono text-sm"
-                            value={selectedItem.manualDiscounts[2] || 0}
-                            onChange={(e) => updateItem(product.idx, 'manualDiscount2', e.target.value)}
-                            onBlur={(e) => updateItem(product.idx, 'manualDiscount2', e.target.value)}
                           />
                         ) : (
                           <span className="text-gray-400">-</span>
@@ -1002,8 +940,8 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                         {sortKey === 'precio_base' && <span>{sortDir === 'asc' ? '▲' : '▼'}</span>}
                       </button>
                     </th>
-                    <th scope="col" className="px-4 py-3 text-center">Desc. Manual 1 (%)</th>
-                    <th scope="col" className="px-4 py-3 text-center">Desc. Manual 2 (%)</th>
+                    <th scope="col" className="px-4 py-3 text-center">Desc. Cliente (%)</th>
+                    <th scope="col" className="px-4 py-3 text-center">Desc. Producto (%)</th>
                     <th scope="col" className="px-4 py-3 text-right">
                       <button onClick={() => handleSort('precio_unitario')} className="hover:text-blue-600 flex items-center gap-1">
                         Precio Unitario
@@ -1038,30 +976,8 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                       </td>
                       <td className="px-4 py-2 text-center font-mono">{Math.round(p.quantity)}</td>
                       <td className="px-4 py-2 text-right font-mono">{formatMoney(p.precio_lista)}</td>
-                      <td className="px-4 py-2 text-center">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          className="w-16 border border-gray-300 rounded-md px-1 py-1 text-center font-mono text-sm"
-                          value={p.manualDiscounts[0] || 0}
-                          onChange={(e) => updateItem(p.idx, 'manualDiscount0', e.target.value)}
-                          onBlur={(e) => updateItem(p.idx, 'manualDiscount0', e.target.value)}
-                        />
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          className="w-16 border border-gray-300 rounded-md px-1 py-1 text-center font-mono text-sm"
-                          value={p.manualDiscounts[1] || 0}
-                          onChange={(e) => updateItem(p.idx, 'manualDiscount1', e.target.value)}
-                          onBlur={(e) => updateItem(p.idx, 'manualDiscount1', e.target.value)}
-                        />
-                      </td>
+                      <td className="px-4 py-2 text-center font-mono text-sm">{p.descSuma01 ? (Math.round(p.descSuma01 * 100) / 100).toFixed(2) + '%' : '0.00%'}</td>
+                      <td className="px-4 py-2 text-center font-mono text-sm">{p.descSuma02 ? (Math.round(p.descSuma02 * 100) / 100).toFixed(2) + '%' : '0.00%'}</td>
                       <td className="px-4 py-2 text-right font-mono">{formatMoney(p.unitPrice)}</td>
                       <td className="px-4 py-2 text-right font-mono font-bold text-green-700">{formatMoney(p.totalSinIgv)}</td>
                       <td className="px-4 py-2 text-right font-mono font-bold text-blue-700">{formatMoney(p.totalConIgv)}</td>

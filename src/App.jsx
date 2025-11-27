@@ -317,17 +317,14 @@ export default function App() {
 
   /**
    * Actualiza un campo específico para una fila de producto
-   * @param {number} idx - Índice en las filas procesadas
+   * @param {number} productIdx - ID único del producto (idx)
    * @param {string} field - Nombre del campo a actualizar
    * @param {any} value - Nuevo valor
    */
-  function updateRow(idx, field, value) {
+  function updateRow(productIdx, field, value) {
     setData((prev) => {
       const newData = [...prev];
-      const r = processedRows[idx];
-      if (!r) return prev;
-
-      const originalIndex = data.findIndex(item => item.idx === r.idx);
+      const originalIndex = data.findIndex(item => item.idx === productIdx);
       if (originalIndex === -1) return prev;
 
       let newValue;
@@ -1299,7 +1296,6 @@ export default function App() {
                   sortKey={sortKey}
                   sortDir={sortDir}
                   handleSort={handleSort}
-                  startIndex={startIndex}
                 />
               </React.Suspense>
             )}
