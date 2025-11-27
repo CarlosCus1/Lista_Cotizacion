@@ -257,7 +257,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
           } else if (field.startsWith('manualDiscount')) {
             const index = parseInt(field.replace('manualDiscount', ''), 10);
             const newDiscounts = [...newItem.manualDiscounts];
-            newDiscounts[index] = Math.max(0, parseFloat(value) || 0);
+            newDiscounts[index] = Math.max(0, Math.min(100, parseFloat(value) || 0));
             newItem.manualDiscounts = newDiscounts;
           }
           return newItem;
@@ -940,8 +940,8 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                         {sortKey === 'precio_base' && <span>{sortDir === 'asc' ? '▲' : '▼'}</span>}
                       </button>
                     </th>
-                    <th scope="col" className="px-4 py-3 text-center">Desc. Cliente (%)</th>
-                    <th scope="col" className="px-4 py-3 text-center">Desc. Producto (%)</th>
+                    <th scope="col" className="px-4 py-3 text-center">Desc. Manual 1 (%)</th>
+                    <th scope="col" className="px-4 py-3 text-center">Desc. Manual 2 (%)</th>
                     <th scope="col" className="px-4 py-3 text-right">
                       <button onClick={() => handleSort('precio_unitario')} className="hover:text-blue-600 flex items-center gap-1">
                         Precio Unitario
@@ -976,8 +976,30 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
                       </td>
                       <td className="px-4 py-2 text-center font-mono">{Math.round(p.quantity)}</td>
                       <td className="px-4 py-2 text-right font-mono">{formatMoney(p.precio_lista)}</td>
-                      <td className="px-4 py-2 text-center font-mono text-sm">{p.descSuma01 ? (Math.round(p.descSuma01 * 100) / 100).toFixed(2) + '%' : '0.00%'}</td>
-                      <td className="px-4 py-2 text-center font-mono text-sm">{p.descSuma02 ? (Math.round(p.descSuma02 * 100) / 100).toFixed(2) + '%' : '0.00%'}</td>
+                      <td className="px-4 py-2 text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          className="w-16 border border-gray-300 rounded-md px-1 py-1 text-center font-mono text-sm"
+                          value={p.manualDiscounts[0] || 0}
+                          onChange={(e) => updateItem(p.idx, 'manualDiscount0', e.target.value)}
+                          onBlur={(e) => updateItem(p.idx, 'manualDiscount0', e.target.value)}
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          className="w-16 border border-gray-300 rounded-md px-1 py-1 text-center font-mono text-sm"
+                          value={p.manualDiscounts[1] || 0}
+                          onChange={(e) => updateItem(p.idx, 'manualDiscount1', e.target.value)}
+                          onBlur={(e) => updateItem(p.idx, 'manualDiscount1', e.target.value)}
+                        />
+                      </td>
                       <td className="px-4 py-2 text-right font-mono">{formatMoney(p.unitPrice)}</td>
                       <td className="px-4 py-2 text-right font-mono font-bold text-green-700">{formatMoney(p.totalSinIgv)}</td>
                       <td className="px-4 py-2 text-right font-mono font-bold text-blue-700">{formatMoney(p.totalConIgv)}</td>
