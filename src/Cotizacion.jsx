@@ -7,12 +7,9 @@ import { formatMoney, formatTimeAgo, toFixed2 } from './utils/formatters.js';
 const IGV = 0.18;
 
 export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] }) {
-  // Procesar catálogo para agregar campo orden (número original del catálogo)
+  // Procesar catálogo para usar campo orden (número original del catálogo)
   const processedCatalogData = useMemo(() => {
-    return catalogData.map((product, index) => ({
-      ...product,
-      orden: index + 1
-    }));
+    return catalogData;
   }, [catalogData]);
 
   // Estado del cliente

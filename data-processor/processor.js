@@ -58,6 +58,7 @@ try {
 
   // Crear mapas para búsqueda rápida
   const codigosValidos = new Set(codigosCotizacion.map(r => String(r.Codigo || r.codigo)));
+  const ordenMap = new Map(codigosCotizacion.map(r => [String(r.Codigo || r.codigo), r.orden || r.Orden]));
   const descuentosMap = new Map(descuentosFijos.map(r => [String(r.Codigo || r.codigo), r]));
   const preciosFijosMap = new Map(preciosFijos.map(r => [String(r.Codigo || r.codigo), r.precio || r.Precio]));
 
@@ -89,6 +90,7 @@ try {
         nombre: producto.Descripción || producto.nombre || producto.descripcion,
         precioLista: parseFloat(precioFinal),
         stock: stockValue,
+        orden: ordenMap.get(code) || 9999, // 📊 Orden específico de la configuración
         desc1: Math.round(parseFloat(descuentos.Desc1 || descuentos.desc1 || 0) * 100), // 💰 Convertir a enteros (porcentajes)
         desc2: Math.round(parseFloat(descuentos.Desc2 || descuentos.desc2 || 0) * 100),
         desc3: Math.round(parseFloat(descuentos.Desc3 || descuentos.desc3 || 0) * 100),
@@ -102,13 +104,16 @@ try {
   console.log(`💵 Productos con precio fijo: ${Array.from(preciosFijosMap.keys()).length}`);
 
   // Generar JSONs de salida
-  const catalogoBase = productosFiltrados.map(p => ({
-    codigo: p.codigo,
-    linea: p.linea,
-    categoria: p.categoria,
-    nombre: p.nombre,
-    precioLista: p.precioLista
-  }));
+  const catalogoBase = productosFiltrados
+    .sort((a, b) => (a.orden || 9999) - (b.orden || 9999)) // 📊 Ordenar por el campo orden
+    .map(p => ({
+      codigo: p.codigo,
+      linea: p.linea,
+      categoria: p.categoria,
+      nombre: p.nombre,
+      precioLista: p.precioLista,
+      orden: p.orden
+    }));
 
   const stockJson = {};
   productosFiltrados.forEach(p => {
