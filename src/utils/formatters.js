@@ -32,10 +32,10 @@ export function formatTimeAgo(date) {
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffMins < 60) {
-    return `hace ${diffMins} min`;
+    return `hace ${diffMins} minutos`;
   } else if (diffHours < 24) {
-    return `hace ${diffHours}h`;
+    return diffHours === 1 ? 'hace 1 hora' : `hace ${diffHours} horas`;
   } else {
-    return `hace ${diffDays} días`;
+    return diffDays === 1 ? 'hace 1 día' : `hace ${diffDays} días`;
   }
 }

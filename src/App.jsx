@@ -42,12 +42,47 @@ export default function App() {
   // Estado para datos de productos y carga
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState('');
+
+  // Estado para la última actualización
+  const [lastUpdate, setLastUpdate] = useState(null);
 
   useEffect(() => {
     fetch('/last-update.txt')
       .then(response => response.text())
-      .then(text => setLastUpdate(text.trim()));
+      .then(text => {
+        if (text.trim()) {
+          const dateStr = text.trim();
+
+          // Parse Spanish date format: "26/11/2025, 4:19:50 p. m." or "26/11/2025, 7:13:44"
+          const parts = dateStr.trim().split(', ');
+          if (parts.length === 2) {
+            const datePart = parts[0]; // "26/11/2025"
+            const timePart = parts[1]; // "4:19:50 p. m." or "7:13:44"
+
+            const [day, month, year] = datePart.split('/');
+            const timeComponents = timePart.split(' ');
+            const [hour, minute, second] = timeComponents[0].split(':');
+            const period = timeComponents.slice(1).join(' ').trim(); // "p. m." or "a. m." or empty
+
+            let hour24 = parseInt(hour);
+
+            // Handle AM/PM conversion if period exists
+            if (period === 'p. m.' && hour24 !== 12) {
+              hour24 += 12;
+            } else if (period === 'a. m.' && hour24 === 12) {
+              hour24 = 0;
+            }
+            // If no period or unrecognized, assume 24-hour format
+
+            const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour24.toString().padStart(2, '0')}:${minute}:${second}`;
+            const dateObj = new Date(isoString);
+            setLastUpdate(dateObj);
+          }
+        }
+      })
+      .catch(error => {
+        console.warn('Error fetching last update:', error);
+      });
   }, []);
 
   // Estado para la lista negra de productos sin descuentos
@@ -928,6 +963,18 @@ export default function App() {
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-md top-0 z-30">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 py-3">
+          {/* Información de última actualización */}
+          {lastUpdate && (
+            <div className="mb-3 flex justify-center">
+              <div className="flex items-center gap-2 text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span>Última actualización: {formatTimeAgo(lastUpdate)}</span>
+              </div>
+            </div>
+          )}
+
           {/* Contenedor para vista móvil */}
           <div className="md:hidden">
             <div className="grid grid-cols-1 gap-4">
@@ -1069,13 +1116,6 @@ export default function App() {
               <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-3">
                 <div className="flex justify-between items-center border-b pb-2">
                   <h3 className="text-md font-semibold text-gray-800">Filtros</h3>
-                  {lastUpdate && (
-                    <Tooltip content={`Última actualización: ${lastUpdate}`} position="bottom">
-                      <svg className="w-5 h-5 text-gray-400 hover:text-primary-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                    </Tooltip>
-                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-1 block">Mostrar categoria</label>
@@ -1329,11 +1369,6 @@ export default function App() {
                 <span className="text-gray-500 text-xs sm:text-sm">• Búsqueda: <span className="font-medium text-gray-700">"{search}"</span></span>
               )}
             </div>
-            {lastUpdate && (
-              <div className="text-xs text-gray-500">
-                Última actualización: {lastUpdate}
-              </div>
-            )}
           </div>
         </div>
       </main>
