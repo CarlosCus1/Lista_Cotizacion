@@ -11,7 +11,8 @@ export default function DataTable({
   updateRow,
   sortKey,
   sortDir,
-  handleSort
+  handleSort,
+  startIndex = 0
 }) {
   const manualCols = (descManualCount >= 2 ? 1 : 0) + (descManualCount >= 3 ? 1 : 0);
 
@@ -262,7 +263,7 @@ export default function DataTable({
                         let val = parseFloat(valStr);
                         if (isNaN(val)) val = 0;
                         if (val !== r.descManual1) {
-                          updateRow(dataIndex, 'descManual1', val);
+                          updateRow(startIndex + dataIndex, 'descManual1', val);
                         }
                         e.target.value = val > 0 ? val.toFixed(2) : '';
                       }}
@@ -289,7 +290,7 @@ export default function DataTable({
                           let val = parseFloat(valStr);
                           if (isNaN(val)) val = 0;
                           if (val !== r.descManual2) {
-                            updateRow(dataIndex, 'descManual2', val);
+                            updateRow(startIndex + dataIndex, 'descManual2', val);
                           }
                           e.target.value = val > 0 ? val.toFixed(2) : '';
                         }}
@@ -317,7 +318,7 @@ export default function DataTable({
                           let val = parseFloat(valStr);
                           if (isNaN(val)) val = 0;
                           if (val !== r.descManual3) {
-                            updateRow(dataIndex, 'descManual3', val);
+                            updateRow(startIndex + dataIndex, 'descManual3', val);
                           }
                           e.target.value = val > 0 ? val.toFixed(2) : '';
                         }}
@@ -336,7 +337,7 @@ export default function DataTable({
                       type="checkbox"
                       className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2 cursor-pointer"
                       checked={r.sinDescuentos || false}
-                      onChange={(e) => updateRow(dataIndex, 'sinDescuentos', e.target.checked)}
+                      onChange={(e) => updateRow(startIndex + dataIndex, 'sinDescuentos', e.target.checked)}
                     />
                   </Tooltip>
                 </div>
@@ -531,7 +532,7 @@ export default function DataTable({
                           let val = parseFloat(valStr);
                           if (isNaN(val)) val = 0;
                           if (val !== r.descManual1) {
-                            updateRow(dataIndex, 'descManual1', val);
+                            updateRow(startIndex + dataIndex, 'descManual1', val);
                           }
                           e.target.value = val > 0 ? val.toFixed(2) : '';
                         }}

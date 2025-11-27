@@ -1299,6 +1299,7 @@ export default function App() {
                   sortKey={sortKey}
                   sortDir={sortDir}
                   handleSort={handleSort}
+                  startIndex={startIndex}
                 />
               </React.Suspense>
             )}
