@@ -1,52 +1,48 @@
 @echo off
-echo 🚀 Iniciando actualización automática de JSON...
+echo [INFO] Iniciando actualizacion automatica de JSON...
 echo.
 
-echo 📊 Procesando datos...
+echo [INFO] Procesando datos...
 cd data-processor
 node processor.js
 if %errorlevel% neq 0 (
-    echo ❌ Error en el procesamiento de datos
+    echo [ERROR] Error en el procesamiento de datos
     pause
     exit /b 1
 )
 cd ..
 
 echo.
-echo 💾 Agregando archivos al commit...
+echo [INFO] Agregando archivos al commit...
 git add data-processor/outputs/stock.json public/stock.json public/last-update.txt
 if %errorlevel% neq 0 (
-    echo ❌ Error al agregar archivos
+    echo [ERROR] Error al agregar archivos
     pause
     exit /b 1
 )
 
 echo.
-echo 📝 Creando commit...
+echo [INFO] Creando commit...
 for /f "tokens=2 delims==" %%i in ('wmic os get localdatetime /value') do set datetime=%%i
 set timestamp=%datetime:~0,4%-%datetime:~4,2%-%datetime:~6,2% %datetime:~8,2%:%datetime:~10,2%:%datetime:~12,2%
-git commit -m "Auto-update JSON files - %timestamp%
-
-- Updated stock data with latest inventory
-- Processed 1090 products successfully
-- Last update: %timestamp%"
+git commit -m "Auto-update JSON files - %timestamp%" -m "- Updated stock data with latest inventory" -m "- Processed 1090 products successfully" -m "- Last update: %timestamp%"
 if %errorlevel% neq 0 (
-    echo ❌ Error al crear commit (posiblemente no hay cambios)
+    echo [ERROR] Error al crear commit (posiblemente no hay cambios)
     pause
     exit /b 1
 )
 
 echo.
-echo 📤 Subiendo cambios al repositorio...
+echo [INFO] Subiendo cambios al repositorio...
 git push origin main
 if %errorlevel% neq 0 (
-    echo ❌ Error al subir cambios
+    echo [ERROR] Error al subir cambios
     pause
     exit /b 1
 )
 
 echo.
-echo ✅ ¡Actualización completada exitosamente!
+echo [SUCCESS] Actualizacion completada exitosamente!
 echo Archivos JSON actualizados, commited y pusheados.
 echo.
 pause
