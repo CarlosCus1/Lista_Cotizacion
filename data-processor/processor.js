@@ -156,6 +156,17 @@ try {
     console.log(`⏰ Fecha de actualización guardada: ${updateTimestamp}`);
   }
 
+  // Copiar también a docs/ para GitHub Pages
+  const docsDir = path.join(__dirname, '..', 'docs');
+  if (fs.existsSync(docsDir)) {
+    fs.copyFileSync('./outputs/catalogo-base.json', path.join(docsDir, 'catalogo-base.json'));
+    fs.copyFileSync('./outputs/stock.json', path.join(docsDir, 'stock.json'));
+    fs.copyFileSync('./outputs/descuentos-fijos.json', path.join(docsDir, 'descuentos-fijos.json'));
+    fs.copyFileSync('./outputs/sin-descuentos.json', path.join(docsDir, 'sin-descuentos.json'));
+    fs.copyFileSync(path.join(publicDir, 'last-update.txt'), path.join(docsDir, 'last-update.txt'));
+    console.log('📋 JSONs copiados a docs/ para GitHub Pages');
+  }
+
   console.log('🎉 Procesamiento completado exitosamente!');
   console.log(`📄 Archivos generados: ${Object.keys(stockJson).length} productos con stock`);
   console.log(`💰 Productos con descuentos: ${Object.keys(descuentosFijosJson).length}`);
