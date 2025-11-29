@@ -80,8 +80,9 @@ export default function App() {
           }
         }
       })
-      .catch(error => {
-        console.warn('Error fetching last update:', error);
+      .catch(() => {
+        // Silently ignore if last-update.txt is not available
+        // This is not critical for application functionality
       });
   }, []);
 
