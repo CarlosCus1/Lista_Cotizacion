@@ -44,7 +44,7 @@ export default function Cotizacion({ onBack, catalogData = [], descOcultos = [] 
   const [selectionLastSaved, setSelectionLastSaved] = useState(null);
 
   // Estado para ordenamiento y paginación de la tabla de resumen
-  const [sortKey, setSortKey] = useState('codigo');
+  const [sortKey, setSortKey] = useState('orden');
   const [sortDir, setSortDir] = useState('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
