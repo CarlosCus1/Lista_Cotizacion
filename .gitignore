@@ -15,6 +15,13 @@ public/backup/
 dist/
 build/
 
+# Generated JSON files (auto-generated from Excel data)
+public/*.json
+public/last-update.txt
+docs/*.json
+docs/last-update.txt
+data-processor/outputs/*.json
+
 # Environment variables
 .env
 .env.local
