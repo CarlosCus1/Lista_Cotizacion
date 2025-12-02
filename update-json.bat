@@ -45,4 +45,4 @@ echo.
 echo [SUCCESS] Actualizacion completada exitosamente!
 echo Archivos JSON actualizados, commited y pusheados.
 echo.
-pause
+echo [INFO] Proceso completado automaticamente.
