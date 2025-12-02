@@ -40,54 +40,6 @@ const LazyCotizacion = (props) => {
 
 export default function App() {
   // Estado para datos de productos y carga
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Estado para la última actualización
-  const [lastUpdate, setLastUpdate] = useState(null);
-
-  useEffect(() => {
-    fetch('/last-update.txt')
-      .then(response => response.text())
-      .then(text => {
-        if (text.trim()) {
-          const dateStr = text.trim();
-
-          // Parse Spanish date format: "26/11/2025, 4:19:50 p. m." or "26/11/2025, 7:13:44"
-          const parts = dateStr.trim().split(', ');
-          if (parts.length === 2) {
-            const datePart = parts[0]; // "26/11/2025"
-            const timePart = parts[1]; // "4:19:50 p. m." or "7:13:44"
-
-            const [day, month, year] = datePart.split('/');
-            const timeComponents = timePart.split(' ');
-            const [hour, minute, second] = timeComponents[0].split(':');
-            const period = timeComponents.slice(1).join(' ').trim(); // "p. m." or "a. m." or empty
-
-            let hour24 = parseInt(hour);
-
-            // Handle AM/PM conversion if period exists
-            if (period === 'p. m.' && hour24 !== 12) {
-              hour24 += 12;
-            } else if (period === 'a. m.' && hour24 === 12) {
-              hour24 = 0;
-            }
-            // If no period or unrecognized, assume 24-hour format
-
-            const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour24.toString().padStart(2, '0')}:${minute}:${second}`;
-            const dateObj = new Date(isoString);
-            setLastUpdate(dateObj);
-          }
-        }
-      })
-      .catch(() => {
-        // Silently ignore if last-update.txt is not available
-        // This is not critical for application functionality
-      });
-  }, []);
-
-  // Estado para la lista negra de productos sin descuentos
-  const [noDiscountList, setNoDiscountList] = useState(new Set());
 
   // Estado para filtros y ordenación
   const [selectedLine, setSelectedLine] = useState('TODAS');
@@ -107,6 +59,9 @@ export default function App() {
 
   // Estado para la gestión de la vista
   const [currentView, setCurrentView] = useState('catalog'); // 'catalog' or 'quotation'
+
+  // Estado para última actualización
+  const [lastUpdate, setLastUpdate] = useState(null);
 
   // Estado para paginación
   const [currentPage, setCurrentPage] = useState(1);
@@ -234,6 +189,9 @@ export default function App() {
 
       // 4. Cargar filtros de búsqueda
       await loadSavedSearchFilters();
+
+      // 5. Cargar última actualización (opcional y silencioso)
+      loadLastUpdate();
 
       console.log('Aplicación inicializada exitosamente');
 
@@ -462,6 +420,25 @@ export default function App() {
       }
     } catch (error) {
       console.error('Error cargando filtros de búsqueda:', error);
+    }
+  }
+
+  /**
+   * Carga la última actualización desde last-update.txt (opcional y silencioso)
+   */
+  async function loadLastUpdate() {
+    try {
+      const response = await fetch('/last-update.txt');
+      if (response.ok) {
+        const text = await response.text();
+        const timestamp = new Date(text.trim());
+        if (!isNaN(timestamp.getTime())) {
+          setLastUpdate(timestamp);
+        }
+      }
+    } catch (error) {
+      // Carga silenciosa - no mostrar errores si el archivo no existe
+      console.debug('No se pudo cargar last-update.txt (opcional):', error.message);
     }
   }
 
