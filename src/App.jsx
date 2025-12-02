@@ -3,10 +3,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { calculatePrice, calculateCompoundHiddenDiscount } from './hooks/usePriceCalculator.js';
 import { useDebounce } from './hooks/useDebounce.js';
-import catalogData from '../data-processor/outputs/catalogo-base.json';
-import discountData from '../data-processor/outputs/descuentos-fijos.json';
-import stockData from '../data-processor/outputs/stock.json';
-import noDiscountData from '../data-processor/outputs/sin-descuentos.json';
+import catalogData from '../public/catalogo-base.json';
+import discountData from '../public/descuentos-fijos.json';
+import stockData from '../public/stock.json';
+import noDiscountData from '../public/sin-descuentos.json';
 import { formatMoney, formatTimeAgo } from './utils/formatters.js';
 import CategoryFilter from './components/CategoryFilter.jsx';
 import Tooltip from './components/Tooltip.jsx';
@@ -40,6 +40,8 @@ const LazyCotizacion = (props) => {
 
 export default function App() {
   // Estado para datos de productos y carga
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Estado para filtros y ordenación
   const [selectedLine, setSelectedLine] = useState('TODAS');
@@ -72,7 +74,7 @@ export default function App() {
 
   // Opciones de línea únicas memorizadas para el menú desplegable de filtro
   const lineOptions = useMemo(() => {
-    const lines = new Set(data.map((r) => r.linea).filter(Boolean));
+    const lines = new Set((data || []).map((r) => r.linea).filter(Boolean));
     return [...lines].sort();
   }, [data]);
 
@@ -96,7 +98,7 @@ export default function App() {
   }, [selectedLine, search, categoriasActivas]);
 
   const processedRows = useMemo(() => {
-    let filteredData = data;
+    let filteredData = data || [];
 
     // Filtrar por categorías activas
     filteredData = filteredData.filter((r) => {
@@ -211,7 +213,7 @@ export default function App() {
   // Guardar automáticamente el catálogo en localStorage estructurado
   useEffect(() => {
     // Evita guardar un array vacío durante la carga inicial
-    if (data.length > 0) {
+    if (data && data.length > 0) {
       localStorage.setItem('idb_catalog_data', JSON.stringify(data));
     }
   }, [data]);
@@ -247,30 +249,35 @@ export default function App() {
 
     // Cargar desde JSON si no hay datos guardados válidos
     console.log('Cargando catálogo desde JSON');
-    const initialData = catalogData.map((row, idx) => {
-      const code = row.codigo;
-      const discounts = discountData[code] || [0, 0, 0, 0];
-      const stock = stockData[code] || 0;
-      const sinDescuentos = noDiscountData.includes(code);
+    try {
+      const initialData = (catalogData || []).map((row, idx) => {
+        const code = row.codigo;
+        const discounts = (discountData || {})[code] || [0, 0, 0, 0];
+        const stock = (stockData || {})[code] || 0;
+        const sinDescuentos = (noDiscountData || []).includes(code);
 
-      return {
-        ...row,
-        idx,
-        precio_lista: row.precioLista,
-        stock,
-        desc1: discounts[0],
-        desc2: discounts[1],
-        desc3: discounts[2],
-        desc4: discounts[3],
-        descManual1: 0,
-        descManual2: 0,
-        descManual3: 0,
-        sinDescuentos,
-      };
-    });
-    setData(initialData);
-    // Guardar en IndexedDB para futuras cargas
-    saveToDB('catalog', 'data', initialData);
+        return {
+          ...row,
+          idx,
+          precio_lista: row.precioLista,
+          stock,
+          desc1: discounts[0],
+          desc2: discounts[1],
+          desc3: discounts[2],
+          desc4: discounts[3],
+          descManual1: 0,
+          descManual2: 0,
+          descManual3: 0,
+          sinDescuentos,
+        };
+      });
+      setData(initialData);
+      // Guardar en IndexedDB para futuras cargas
+      saveToDB('catalog', 'data', initialData);
+    } catch (error) {
+      console.warn('Error loading JSON data, using fallback:', error);
+      setData([]);
+    }
     setLoading(false);
   }
 
@@ -282,8 +289,8 @@ export default function App() {
    */
   function updateRow(productIdx, field, value) {
     setData((prev) => {
-      const newData = [...prev];
-      const originalIndex = data.findIndex(item => item.idx === productIdx);
+      const newData = [...(prev || [])];
+      const originalIndex = (prev || []).findIndex(item => item.idx === productIdx);
       if (originalIndex === -1) return prev;
 
       let newValue;
@@ -483,7 +490,7 @@ export default function App() {
       // Excluyendo productos sin descuentos (sinDescuentos=true)
       const activeFixedHeaders = [];
       for (let i = 1; i <= 4; i++) {
-        if (data.some(r => !r.sinDescuentos && (r[`desc${i}`] || 0) > 0)) {
+        if ((data || []).some(r => !r.sinDescuentos && (r[`desc${i}`] || 0) > 0)) {
           activeFixedHeaders.push(`desc_fijos_${i}_%`);
         }
       }
@@ -731,7 +738,7 @@ export default function App() {
       // Excluyendo productos sin descuentos (sinDescuentos=true)
       const activeFixedHeaders = [];
       for (let i = 1; i <= 4; i++) {
-        if (data.some(r => !r.sinDescuentos && (r[`desc${i}`] || 0) > 0)) {
+        if ((data || []).some(r => !r.sinDescuentos && (r[`desc${i}`] || 0) > 0)) {
           activeFixedHeaders.push(`desc_fijos_${i}_%`);
         }
       }
@@ -740,7 +747,7 @@ export default function App() {
       // Excluyendo productos sin descuentos (sinDescuentos=true)
       const manualHeaders = [];
       for (let i = 1; i <= descManualCount; i++) {
-        if (data.some(r => !r.sinDescuentos && (r[`descManual${i}`] || 0) > 0)) {
+        if ((data || []).some(r => !r.sinDescuentos && (r[`descManual${i}`] || 0) > 0)) {
           manualHeaders.push(`desc_adicionales_${i}_%`);
         }
       }

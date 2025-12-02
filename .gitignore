@@ -16,8 +16,8 @@ dist/
 build/
 
 # Generated JSON files (auto-generated from Excel data)
-public/*.json
-public/last-update.txt
+# public/*.json - Now tracked for build compatibility
+# public/last-update.txt - Now tracked for build compatibility
 docs/*.json
 docs/last-update.txt
 data-processor/outputs/*.json
