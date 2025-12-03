@@ -2,6 +2,9 @@
 echo [INFO] Iniciando actualizacion de archivos JSON...
 echo.
 
+REM Cambiar al directorio del proyecto
+cd /d "%~dp0"
+
 echo [INFO] Procesando datos...
 cd data-processor
 node processor.js

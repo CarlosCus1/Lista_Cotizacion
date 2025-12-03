@@ -2,6 +2,9 @@
 echo [INFO] Iniciando commit y deploy de cambios...
 echo.
 
+REM Cambiar al directorio del proyecto
+cd /d "%~dp0"
+
 echo [INFO] Verificando cambios en archivos trackeados...
 git status --porcelain
 if %errorlevel% equ 0 (
